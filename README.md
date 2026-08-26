@@ -1,56 +1,158 @@
-# Welcome to your Expo app 👋
+# NOVA Design Foundation
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Base de tokens + themes para Expo SDK 57 / React Native 0.86 / Unistyles 3 / React Native Paper 5.
 
-## Get started
+Esta entrega **no incluye todavía**:
+- motion / animaciones,
+- pressables,
+- haptics,
+- accesibilidad,
+- componentes App*.
 
-1. Install dependencies
+La intención es que esas capas consuman esta foundation sin hardcodear colores, tamaños, tipografía, radios o breakpoints.
 
-   ```bash
-   npm install
-   ```
+## 1. Dependencia adicional para Inter
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+El proyecto ya incluye `expo-font`, pero para usar la tipografía definida aquí instala:
 
 ```bash
-npm run reset-project
+npx expo install @expo-google-fonts/inter@0.4.2
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+No se incluyen ni distribuyen archivos de fuente en este paquete.
 
-### Other setup steps
+## 2. Estructura
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```text
+src/design-system/
+├── fonts/
+├── theme/
+└── tokens/
+```
 
-## Learn more
+## 3. Unistyles
 
-To learn more about developing your project with Expo, look at the following resources:
+Unistyles 3 requiere su plugin Babel. En `babel.config.js`:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```js
+module.exports = function (api) {
+  api.cache(true);
 
-## Join the community
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: [
+      [
+        'react-native-unistyles/plugin',
+        {
+          root: 'src',
+        },
+      ],
+    ],
+  };
+};
+```
 
-Join our community of developers creating universal apps.
+Expo SDK 57 configura automáticamente el plugin de Reanimated mediante `babel-preset-expo`.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 4. Entry point
+
+Cambia en `package.json`:
+
+```json
+"main": "index.ts"
+```
+
+Usa el `index.ts` incluido en este paquete como referencia.
+
+Después reinicia Metro:
+
+```bash
+npx expo start --clear
+```
+
+## 5. Theme
+
+Hay tres preferencias soportadas por contrato:
+
+```ts
+type ThemePreference = 'system' | 'light' | 'dark';
+```
+
+El controlador incluido arranca en `system`, sigue `Appearance` y permite forzar `light` o `dark`.
+La persistencia de la preferencia se conectará después (SQLite/Zustand).
+
+## 6. Reglas del Design System
+
+- Las features no consumen HEX.
+- Las features no consumen `palette.nova500`.
+- Los componentes consumen tokens semánticos: `theme.colors.primary`, `theme.colors.danger`, etc.
+- Los componentes usan la escala de spacing/radius/typography.
+- `variant` define presentación; `tone` define significado.
+- Motion, haptics y accesibilidad se añadirán en la siguiente fase.
+
+## 7. Colores corporativos
+
+El color NOVA se aproxima a `#2AC29A` a partir del logo proporcionado.
+Negro y blanco forman parte de la identidad.
+
+La paleta semántica separa:
+- `primary`: identidad NOVA,
+- `success`: éxito,
+- `warning`: advertencia,
+- `danger`: error/destructivo,
+- `info`: información.
+
+Esto evita utilizar el mismo verde corporativo para “acción primaria” y “éxito”.
+
+## Foundation v2 — Interaction
+
+This package now also includes:
+
+- motion tokens and Reanimated presets,
+- reduced-motion policy,
+- interaction state/touch policies,
+- semantic Expo Haptics service,
+- feedback semantics.
+
+See:
+
+```text
+CHANGELOG-v2.md
+src/design-system/docs/INTERACTION-FOUNDATION.md
+```
+
+No new runtime dependency is needed for v2.
+
+## Foundation v3 — Accessibility
+
+The cumulative v3 adds the accessibility layer before reusable components.
+
+Includes:
+
+- WCAG 2.2 AA policy/tokens,
+- OS accessibility preference store,
+- `useAccessibilityPreferences`,
+- reduced-transparency / increased-contrast signals,
+- current accessibility focus API,
+- accessible timeout handling,
+- screen-reader announcement service,
+- accessibility state/value helpers,
+- contrast validation utilities,
+- live-region and accessible-label conventions.
+
+See:
+
+```text
+CHANGELOG-v3.md
+src/design-system/docs/ACCESSIBILITY-FOUNDATION.md
+```
+
+No new dependency is required.
+
+## Foundation v3.2 — RN 0.86.2 AccessibilityInfo compatibility
+
+v3.2 is the current cumulative source of truth.
+
+It removes the unsupported `accessibilityServiceChanged` listener from the
+React Native 0.86.2 implementation while keeping
+`isAccessibilityServiceEnabled()` query-based reconciliation.
