@@ -1,0 +1,15 @@
+Delete these legacy Expo template paths after applying the new shell:
+
+src/app/explore.tsx
+src/components/
+src/constants/
+src/hooks/
+
+Do NOT delete:
+src/design-system/
+src/app/_layout.tsx
+src/app/index.tsx
+assets/          (leave for now)
+src/global.css   (leave for now)
+
+The old folders are no longer referenced by the new NOVA shell.

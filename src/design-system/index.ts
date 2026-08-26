@@ -1,3 +1,12 @@
+/**
+ * Always initialize Unistyles before evaluating any public component module.
+ *
+ * This is required in addition to the app entry because Expo Router Web can
+ * evaluate route modules through its server renderer without executing the
+ * client entry first.
+ */
+import './bootstrap';
+
 export * from './accessibility';
 export * from './actions';
 export * from './contracts';

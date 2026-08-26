@@ -1,4 +1,4 @@
-import 'expo-router/entry';
+import './src/design-system/bootstrap';
 
-import './src/design-system/theme/unistyles';
-import './src/design-system/theme/theme-controller';
+// Expo Router must be registered after application initialization side effects.
+import 'expo-router/entry';
