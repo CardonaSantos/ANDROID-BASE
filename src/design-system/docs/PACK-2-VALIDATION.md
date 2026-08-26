@@ -47,3 +47,21 @@ headerBackImageSource
 ```
 
 It also does not use Expo Router ExperimentalStack APIs.
+
+## Pack 2.1 TypeScript regressions
+
+Verify these contracts remain intact:
+
+```ts
+// AppImage
+imageStyle?: ImageProps['style'];
+
+// AppSegmentedControl
+options: readonly [
+  AppSegmentedOption<TValue>,
+  ...AppSegmentedOption<TValue>[],
+];
+```
+
+`AppSegmentedControl` must always pass a concrete `TValue` as
+`defaultValue` to `useControllableState`.

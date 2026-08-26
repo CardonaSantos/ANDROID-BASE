@@ -40,8 +40,15 @@ export type AppSegmentedControlStateProps<
 export interface AppSegmentedControlBaseProps<
   TValue extends string,
 > {
-  options:
-    readonly AppSegmentedOption<TValue>[];
+  /**
+   * A segmented control without options has no valid selected value.
+   * Enforce at least one option so controlled/uncontrolled initialization can
+   * always resolve a concrete TValue without casts or undefined fallbacks.
+   */
+  options: readonly [
+    AppSegmentedOption<TValue>,
+    ...AppSegmentedOption<TValue>[],
+  ];
 
   tone?: ComponentTone;
   size?: ComponentSize;

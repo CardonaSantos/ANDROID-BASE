@@ -211,24 +211,30 @@ export const AppSegmentedControl = <
     onValueChange,
   } = props;
 
-  const stateOptions =
-    'value' in props &&
-    props.value !== undefined
-      ? {
-          value: props.value,
-          defaultValue:
-            props.value,
-          onValueChange,
-        }
-      : {
-          defaultValue:
-            props.defaultValue,
-          onValueChange,
-        };
+  /**
+   * `options` is non-empty by contract, therefore a concrete default always
+   * exists. This also avoids asking TypeScript to narrow an intermediate union
+   * where `defaultValue` could otherwise appear as `TValue | undefined`.
+   */
+  const resolvedDefaultValue: TValue =
+    props.defaultValue ??
+    props.value ??
+    options[0].value;
 
   const [value, setValue] =
     useControllableState<TValue>(
-      stateOptions,
+      props.value !== undefined
+        ? {
+            value: props.value,
+            defaultValue:
+              resolvedDefaultValue,
+            onValueChange,
+          }
+        : {
+            defaultValue:
+              resolvedDefaultValue,
+            onValueChange,
+          },
     );
 
   const handleSelect = (
