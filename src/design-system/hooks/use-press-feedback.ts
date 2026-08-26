@@ -42,9 +42,13 @@ export const usePressFeedback = (
 
   const animateScale = useCallback(
     (nextScale: number) => {
-      scale.value = withSpring(
-        nextScale,
-        springPresets[preset.spring],
+      scale.set(
+        withSpring(
+          nextScale,
+          springPresets[
+            preset.spring
+          ],
+        ),
       );
     },
     [preset.spring, scale],
@@ -52,9 +56,11 @@ export const usePressFeedback = (
 
   const animateLayer = useCallback(
     (nextOpacity: number) => {
-      layerOpacity.value = withTiming(
-        nextOpacity,
-        timingPresets.fast,
+      layerOpacity.set(
+        withTiming(
+          nextOpacity,
+          timingPresets.fast,
+        ),
       );
     },
     [layerOpacity],
@@ -133,14 +139,15 @@ export const usePressFeedback = (
     useAnimatedStyle(() => ({
       transform: [
         {
-          scale: scale.value,
+          scale: scale.get(),
         },
       ],
     }));
 
   const stateLayerAnimatedStyle =
     useAnimatedStyle(() => ({
-      opacity: layerOpacity.value,
+      opacity:
+        layerOpacity.get(),
     }));
 
   return {

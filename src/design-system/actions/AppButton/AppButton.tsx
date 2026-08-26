@@ -178,7 +178,6 @@ export const AppButton = ({
 
       {showLoading ? (
         <View
-          pointerEvents="none"
           style={styles.loader}
         >
           <ActivityIndicator
@@ -251,6 +250,7 @@ const styles = StyleSheet.create(
     },
 
     loader: {
+      pointerEvents: 'none',
       position: 'absolute',
       top: 0,
       right: 0,

@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useState,
 } from 'react';
 
@@ -56,12 +55,16 @@ export const AppDatePicker = ({
           },
     );
 
-  const [draft, setDraft] =
-    useState(
-      formatDateForInput(
-        selectedDate,
-      ),
-    );
+  const selectedDateKey =
+    selectedDate.getTime();
+
+  const [
+    draftState,
+    setDraftState,
+  ] = useState<{
+    sourceKey: number;
+    value: string;
+  } | null>(null);
 
   const [
     localError,
@@ -71,13 +74,26 @@ export const AppDatePicker = ({
       null,
     );
 
-  useEffect(() => {
-    setDraft(
-      formatDateForInput(
-        selectedDate,
-      ),
+  const formattedSelectedDate =
+    formatDateForInput(
+      selectedDate,
     );
-  }, [selectedDate]);
+
+  const draft =
+    draftState?.sourceKey ===
+    selectedDateKey
+      ? draftState.value
+      : formattedSelectedDate;
+
+  const updateDraft = (
+    nextValue: string,
+  ) => {
+    setDraftState({
+      sourceKey:
+        selectedDateKey,
+      value: nextValue,
+    });
+  };
 
   const commit = () => {
     const parsed =
@@ -117,7 +133,9 @@ export const AppDatePicker = ({
   return (
     <AppInput
       value={draft}
-      onChangeText={setDraft}
+      onChangeText={
+        updateDraft
+      }
       onBlur={commit}
       placeholder={placeholder}
       error={

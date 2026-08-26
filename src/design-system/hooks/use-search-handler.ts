@@ -60,28 +60,29 @@ export const useSearchHandler = (
   const [isDebouncing, setIsDebouncing] =
     useState(false);
 
-  const onSearchRef =
-    useRef(options.onSearch);
+  const {
+    onSearch,
+    debounceMs = 300,
+    minimumLength = 0,
+    trim = true,
+    searchOnMount = false,
+  } = options;
 
-  onSearchRef.current = options.onSearch;
-
-  const didMount = useRef(false);
+  const didMount =
+    useRef(false);
 
   const normalize = useCallback(
     (query: string): string =>
-      options.trim === false
-        ? query
-        : query.trim(),
-    [options.trim],
+      trim
+        ? query.trim()
+        : query,
+    [trim],
   );
 
   const runSearch = useCallback(
     async (query: string) => {
       const normalized =
         normalize(query);
-
-      const minimumLength =
-        options.minimumLength ?? 0;
 
       if (
         normalized.length > 0 &&
@@ -91,29 +92,27 @@ export const useSearchHandler = (
         return;
       }
 
-      await onSearchRef.current?.(
+      await onSearch?.(
         normalized,
       );
     },
     [
+      minimumLength,
       normalize,
-      options.minimumLength,
+      onSearch,
     ],
   );
 
   useEffect(() => {
     const shouldSkipMount =
       !didMount.current &&
-      options.searchOnMount !== true;
+      !searchOnMount;
 
     didMount.current = true;
 
     if (shouldSkipMount) {
       return;
     }
-
-    const debounceMs =
-      options.debounceMs ?? 300;
 
     setIsDebouncing(true);
 
@@ -129,9 +128,9 @@ export const useSearchHandler = (
       clearTimeout(timer);
     };
   }, [
-    options.debounceMs,
-    options.searchOnMount,
+    debounceMs,
     runSearch,
+    searchOnMount,
     value,
   ]);
 

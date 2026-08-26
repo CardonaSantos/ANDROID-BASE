@@ -8,8 +8,21 @@ type AppThemes = typeof appThemes;
 type AppBreakpoints = typeof breakpoints;
 
 declare module 'react-native-unistyles' {
-  export interface UnistylesThemes extends AppThemes {}
-  export interface UnistylesBreakpoints extends AppBreakpoints {}
+  export interface UnistylesThemes {
+    light: AppThemes['light'];
+    dark: AppThemes['dark'];
+  }
+
+  export interface UnistylesBreakpoints {
+    compact:
+      AppBreakpoints['compact'];
+    medium:
+      AppBreakpoints['medium'];
+    expanded:
+      AppBreakpoints['expanded'];
+    wide:
+      AppBreakpoints['wide'];
+  }
 }
 
 StyleSheet.configure({

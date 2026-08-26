@@ -137,7 +137,6 @@ const SegmentItem = <
       )}
     >
       <Animated.View
-        pointerEvents="none"
         style={[
           styles.selectedLayer(
             selectedColors.container ??
@@ -148,7 +147,6 @@ const SegmentItem = <
       />
 
       <View
-        pointerEvents="none"
         style={styles.segmentContent}
       >
         {option.icon ? (
@@ -344,6 +342,7 @@ const styles = StyleSheet.create(
       container:
         keyof typeof theme.colors,
     ) => ({
+      pointerEvents: 'none',
       position: 'absolute',
       top: 0,
       right: 0,
@@ -356,6 +355,7 @@ const styles = StyleSheet.create(
     }),
 
     segmentContent: {
+      pointerEvents: 'none',
       position: 'relative',
       zIndex: 1,
       minWidth: 0,

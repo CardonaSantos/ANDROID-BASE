@@ -1,0 +1,14 @@
+# NOVA repository text normalization
+* text=auto
+
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.js   text eol=lf
+*.jsx  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.txt  text eol=lf
+*.css  text eol=lf
+
+# Windows helper scripts
+*.ps1  text eol=crlf

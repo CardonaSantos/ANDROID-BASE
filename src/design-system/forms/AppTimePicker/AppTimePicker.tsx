@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useState,
 } from 'react';
 
@@ -55,12 +54,16 @@ export const AppTimePicker = ({
           },
     );
 
-  const [draft, setDraft] =
-    useState(
-      formatTimeForInput(
-        selectedTime,
-      ),
-    );
+  const selectedTimeKey =
+    selectedTime.getTime();
+
+  const [
+    draftState,
+    setDraftState,
+  ] = useState<{
+    sourceKey: number;
+    value: string;
+  } | null>(null);
 
   const [
     localError,
@@ -70,13 +73,26 @@ export const AppTimePicker = ({
       null,
     );
 
-  useEffect(() => {
-    setDraft(
-      formatTimeForInput(
-        selectedTime,
-      ),
+  const formattedSelectedTime =
+    formatTimeForInput(
+      selectedTime,
     );
-  }, [selectedTime]);
+
+  const draft =
+    draftState?.sourceKey ===
+    selectedTimeKey
+      ? draftState.value
+      : formattedSelectedTime;
+
+  const updateDraft = (
+    nextValue: string,
+  ) => {
+    setDraftState({
+      sourceKey:
+        selectedTimeKey,
+      value: nextValue,
+    });
+  };
 
   const commit = () => {
     const parsed =
@@ -99,7 +115,9 @@ export const AppTimePicker = ({
   return (
     <AppInput
       value={draft}
-      onChangeText={setDraft}
+      onChangeText={
+        updateDraft
+      }
       onBlur={commit}
       placeholder={placeholder}
       error={

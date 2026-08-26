@@ -2,7 +2,7 @@ import {
   forwardRef,
   type ComponentRef,
 } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { StyleSheet } from 'react-native-unistyles';
 
 import type {
@@ -112,29 +112,49 @@ const styles = StyleSheet.create(
         const level =
           theme.elevation[elevation];
 
+        const offsetY =
+          Math.max(
+            1,
+            level,
+          );
+
+        const blurRadius =
+          Math.max(
+            2,
+            level * 2,
+          );
+
+        const platformShadow =
+          Platform.OS === 'web'
+            ? {
+                boxShadow:
+                  `0px ${offsetY}px ${blurRadius}px 0px ${theme.colors.shadow}`,
+              }
+            : Platform.OS ===
+                'android'
+              ? {
+                  elevation: level,
+                }
+              : {
+                  shadowColor:
+                    theme.colors
+                      .shadow,
+                  shadowOffset: {
+                    width: 0,
+                    height:
+                      offsetY,
+                  },
+                  shadowOpacity: 1,
+                  shadowRadius:
+                    blurRadius,
+                };
+
         return {
           ...base,
+          ...platformShadow,
           backgroundColor:
             theme.colors
               .surfaceElevated,
-          elevation: level,
-          shadowColor: '#000000',
-          shadowOffset: {
-            width: 0,
-            height: Math.max(
-              1,
-              level,
-            ),
-          },
-          shadowOpacity:
-            theme.isDark
-              ? 0.28
-              : 0.10,
-          shadowRadius:
-            Math.max(
-              2,
-              level * 2,
-            ),
         };
       }
 

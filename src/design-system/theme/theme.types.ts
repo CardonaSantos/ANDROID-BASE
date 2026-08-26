@@ -70,6 +70,7 @@ export interface SemanticColors {
 
   overlay: string;
   scrim: string;
+  shadow: string;
 
   inverseSurface: string;
   inverseOnSurface: string;

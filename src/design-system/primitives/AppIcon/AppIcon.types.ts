@@ -20,6 +20,10 @@ export interface AppIconProps
     | 'size'
     | 'accessibilityLabel'
     | 'accessible'
+    | 'accessibilityRole'
+    | 'accessibilityHint'
+    | 'accessibilityState'
+    | 'accessibilityValue'
   > {
   icon: LucideIcon;
 

@@ -1,6 +1,7 @@
 import {
   ActivityIndicator,
   I18nManager,
+  Platform,
   View,
 } from 'react-native';
 import {
@@ -156,7 +157,6 @@ export const AppFab = ({
 
       {showLoading ? (
         <View
-          pointerEvents="none"
           style={styles.loader}
         >
           <ActivityIndicator
@@ -199,18 +199,29 @@ const styles = StyleSheet.create(
         container
           ? theme.colors[container]
           : theme.colors.primary,
-      elevation:
-        theme.elevation.high,
-      shadowColor: '#000000',
-      shadowOffset: {
-        width: 0,
-        height: 3,
-      },
-      shadowOpacity:
-        theme.isDark
-          ? 0.32
-          : 0.16,
-      shadowRadius: 8,
+      ...(Platform.OS === 'web'
+        ? {
+            boxShadow:
+              `0px 3px 8px 0px ${theme.colors.shadow}`,
+          }
+        : Platform.OS ===
+            'android'
+          ? {
+              elevation:
+                theme.elevation
+                  .high,
+            }
+          : {
+              shadowColor:
+                theme.colors
+                  .shadow,
+              shadowOffset: {
+                width: 0,
+                height: 3,
+              },
+              shadowOpacity: 1,
+              shadowRadius: 8,
+            }),
     }),
 
     content: {
@@ -225,6 +236,7 @@ const styles = StyleSheet.create(
     },
 
     loader: {
+      pointerEvents: 'none',
       position: 'absolute',
       top: 0,
       right: 0,

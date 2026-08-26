@@ -31,7 +31,6 @@ import {
 } from '../../accessibility';
 import {
   feedbackPolicy,
-  type FeedbackTone,
 } from '../../feedback';
 import {
   resolveFeedbackToneTokens,
@@ -271,7 +270,6 @@ export const AppToast = ({
             ? topExiting
             : bottomExiting
         }
-        pointerEvents="none"
         testID={testID}
         style={[
           styles.position(
@@ -345,6 +343,7 @@ const styles = StyleSheet.create(
       insetTop: number,
       insetBottom: number,
     ) => ({
+      pointerEvents: 'none',
       position: 'absolute',
       left: theme.spacing.lg,
       right: theme.spacing.lg,

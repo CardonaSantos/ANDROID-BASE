@@ -74,6 +74,7 @@ export const lightTheme = {
 
     overlay: 'rgba(17, 21, 19, 0.48)',
     scrim: 'rgba(0, 0, 0, 0.56)',
+    shadow: 'rgba(17, 21, 19, 0.14)',
 
     inverseSurface: palette.neutral[900],
     inverseOnSurface: palette.neutral[50],

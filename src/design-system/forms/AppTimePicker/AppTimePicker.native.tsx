@@ -4,7 +4,7 @@ import {
 import {
   Clock3,
 } from 'lucide-react-native';
-import DateTimePicker from '@expo/ui/community/datetime-picker';
+import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import {
   useUnistyles,
 } from 'react-native-unistyles';
@@ -97,7 +97,7 @@ export const AppTimePicker = ({
     ).format(selectedTime);
 
   const picker = (
-    <DateTimePicker
+    <ExpoDateTimePicker
       value={selectedTime}
       mode="time"
       presentation={

@@ -3,7 +3,6 @@ import {
   View,
 } from 'react-native';
 import {
-  StyleSheet,
   useUnistyles,
 } from 'react-native-unistyles';
 

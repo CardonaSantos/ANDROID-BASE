@@ -22,7 +22,6 @@ import {
 
 import type {
   AppTopBarProps,
-  AppTopBarTitleAlignment,
   AppTopBarVariant,
 } from './AppTopBar.types';
 
@@ -85,12 +84,6 @@ export const AppTopBar = ({
         </View>
 
         <View
-          pointerEvents={
-            titleAlignment ===
-            'center'
-              ? 'none'
-              : 'auto'
-          }
           style={
             titleAlignment ===
             'center'
@@ -218,6 +211,7 @@ const styles = StyleSheet.create(
     },
 
     centerTitle: {
+      pointerEvents: 'none',
       position: 'absolute',
       left: 72,
       right: 72,

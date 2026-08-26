@@ -1,6 +1,7 @@
 import {
   Children,
   forwardRef,
+  useCallback,
   useImperativeHandle,
   useRef,
   useState,
@@ -56,31 +57,35 @@ export const AppPager =
           initialPage,
         );
 
-      const scrollToPage = (
-        index: number,
-        animated: boolean,
-      ) => {
-        const safeIndex =
-          Math.max(
-            0,
-            index,
-          );
+      const scrollToPage =
+        useCallback(
+          (
+            index: number,
+            animated: boolean,
+          ) => {
+            const safeIndex =
+              Math.max(
+                0,
+                index,
+              );
 
-        if (width > 0) {
-          scrollRef.current
-            ?.scrollTo({
-              x:
-                safeIndex *
-                width,
-              y: 0,
-              animated,
-            });
-        }
+            if (width > 0) {
+              scrollRef.current
+                ?.scrollTo({
+                  x:
+                    safeIndex *
+                    width,
+                  y: 0,
+                  animated,
+                });
+            }
 
-        setCurrentPage(
-          safeIndex,
+            setCurrentPage(
+              safeIndex,
+            );
+          },
+          [width],
         );
-      };
 
       useImperativeHandle(
         ref,
@@ -101,7 +106,7 @@ export const AppPager =
             );
           },
         }),
-        [width],
+        [scrollToPage],
       );
 
       const handleLayout = (

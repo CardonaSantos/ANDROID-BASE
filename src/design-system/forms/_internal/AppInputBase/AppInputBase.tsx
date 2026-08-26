@@ -126,7 +126,6 @@ export const AppInputBase =
         >
           {leading ? (
             <View
-              pointerEvents="box-none"
               style={styles.slot}
             >
               {leading}
@@ -170,7 +169,6 @@ export const AppInputBase =
 
           {trailing ? (
             <View
-              pointerEvents="box-none"
               style={styles.slot}
             >
               {trailing}
@@ -180,7 +178,6 @@ export const AppInputBase =
           {!invalid &&
           focused ? (
             <Animated.View
-              pointerEvents="none"
               style={[
                 styles.focusRing,
                 focusAnimatedStyle,
@@ -273,11 +270,13 @@ const styles = StyleSheet.create(
     }),
 
     slot: {
+      pointerEvents: 'box-none',
       alignItems: 'center',
       justifyContent: 'center',
     },
 
     focusRing: {
+      pointerEvents: 'none',
       position: 'absolute',
       top: -1,
       right: -1,

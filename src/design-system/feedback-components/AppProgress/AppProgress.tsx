@@ -287,7 +287,6 @@ const CircularProgress = ({
 
       {showValue ? (
         <View
-          pointerEvents="none"
           style={
             styles.circularLabel
           }
@@ -344,6 +343,7 @@ const styles = StyleSheet.create(
     },
 
     circularLabel: {
+      pointerEvents: 'none',
       position: 'absolute',
       top: 0,
       right: 0,

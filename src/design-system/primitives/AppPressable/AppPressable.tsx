@@ -347,7 +347,6 @@ export const AppPressable = forwardRef<
 
         {showStateLayer ? (
           <Animated.View
-            pointerEvents="none"
             style={[
               styles.overlay(radius),
               styles.stateLayer(
@@ -363,7 +362,6 @@ export const AppPressable = forwardRef<
         focused &&
         !isDisabled ? (
           <View
-            pointerEvents="none"
             style={[
               styles.overlay(radius),
               styles.focusRing,
@@ -397,6 +395,7 @@ const styles = StyleSheet.create(
     overlay: (
       radius: RadiusToken,
     ) => ({
+      pointerEvents: 'none',
       position: 'absolute',
       top: 0,
       right: 0,

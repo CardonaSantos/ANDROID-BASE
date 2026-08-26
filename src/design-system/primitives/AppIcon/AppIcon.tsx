@@ -1,4 +1,7 @@
 import {
+  View,
+} from 'react-native';
+import {
   useUnistyles,
 } from 'react-native-unistyles';
 
@@ -51,22 +54,35 @@ export const AppIcon = ({
         'AppIcon',
       );
 
-  return (
+  const icon = (
     <Icon
       size={resolvedSize}
       color={resolvedColor}
       strokeWidth={strokeWidth}
-      accessible={
-        !decorative &&
-        Boolean(label)
-      }
-      accessibilityRole={
-        !decorative && label
-          ? 'image'
-          : undefined
-      }
-      accessibilityLabel={label}
       {...rest}
     />
+  );
+
+  /**
+   * Lucide React Native duplicates remaining props onto each SVG child shape.
+   * Keep accessibility semantics outside the SVG implementation so Web never
+   * receives invalid DOM attributes such as `accessible` on <circle>/<path>.
+   */
+  if (decorative || !label) {
+    return icon;
+  }
+
+  return (
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={label}
+      style={{
+        width: resolvedSize,
+        height: resolvedSize,
+      }}
+    >
+      {icon}
+    </View>
   );
 };

@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type SetStateAction,
@@ -32,25 +33,41 @@ export const useControllableState = <T>(
       'value',
     );
 
-  const wasControlled = useRef(isControlled);
+  const {
+    value,
+    defaultValue,
+    onValueChange,
+  } = options;
 
-  if (
-    __DEV__ &&
-    wasControlled.current !== isControlled
-  ) {
-    console.warn(
-      '[NOVA design-system] A component changed between controlled and uncontrolled mode. Keep the same state mode for the component lifetime.',
-    );
-  }
+  const wasControlled =
+    useRef(isControlled);
+
+  useEffect(() => {
+    if (
+      __DEV__ &&
+      wasControlled.current !==
+        isControlled
+    ) {
+      console.warn(
+        '[NOVA design-system] A component changed between controlled and uncontrolled mode. Keep the same state mode for the component lifetime.',
+      );
+    }
+
+    wasControlled.current =
+      isControlled;
+  }, [isControlled]);
 
   const [
     uncontrolledValue,
     setUncontrolledValue,
-  ] = useState<T>(options.defaultValue);
+  ] = useState<T>(
+    defaultValue,
+  );
 
-  const currentValue = isControlled
-    ? (options.value as T)
-    : uncontrolledValue;
+  const currentValue =
+    isControlled
+      ? (value as T)
+      : uncontrolledValue;
 
   const setValue = useCallback(
     (next: SetStateAction<T>): void => {
@@ -67,12 +84,12 @@ export const useControllableState = <T>(
         setUncontrolledValue(resolved);
       }
 
-      options.onValueChange?.(resolved);
+      onValueChange?.(resolved);
     },
     [
       currentValue,
       isControlled,
-      options.onValueChange,
+      onValueChange,
     ],
   );
 

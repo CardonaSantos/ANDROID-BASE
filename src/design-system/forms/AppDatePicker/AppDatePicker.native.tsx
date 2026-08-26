@@ -4,7 +4,7 @@ import {
 import {
   CalendarDays,
 } from 'lucide-react-native';
-import DateTimePicker from '@expo/ui/community/datetime-picker';
+import ExpoDateTimePicker from '@expo/ui/community/datetime-picker';
 import {
   useUnistyles,
 } from 'react-native-unistyles';
@@ -95,7 +95,7 @@ export const AppDatePicker = ({
     ).format(selectedDate);
 
   const picker = (
-    <DateTimePicker
+    <ExpoDateTimePicker
       value={selectedDate}
       mode="date"
       presentation={

@@ -74,6 +74,7 @@ export const darkTheme = {
 
     overlay: 'rgba(0, 0, 0, 0.64)',
     scrim: 'rgba(0, 0, 0, 0.72)',
+    shadow: 'rgba(0, 0, 0, 0.42)',
 
     inverseSurface: '#F4F7F6',
     inverseOnSurface: palette.neutral[900],

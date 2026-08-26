@@ -19,7 +19,6 @@ import {
 
 import type {
   AppStatProps,
-  AppStatVariant,
 } from './AppStat.types';
 
 const resolveIconContentToken = (
