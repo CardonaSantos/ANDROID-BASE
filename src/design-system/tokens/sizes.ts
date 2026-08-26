@@ -13,8 +13,12 @@ export const sizes = {
   },
 
   control: {
-    sm: 36,
-    md: 44,
+    /**
+     * Interactive control heights intentionally align with NOVA's
+     * accessibility touch-target policy.
+     */
+    sm: 44,
+    md: 48,
     lg: 52,
     xl: 56,
   },

@@ -1,4 +1,10 @@
+import {
+  BottomSheetModalProvider,
+} from '@gorhom/bottom-sheet';
 import { PaperProvider } from 'react-native-paper';
+import {
+  GestureHandlerRootView,
+} from 'react-native-gesture-handler';
 import { useUnistyles } from 'react-native-unistyles';
 
 import {
@@ -7,15 +13,21 @@ import {
 } from '../../theme';
 import { AppKeyboardProvider } from '../AppKeyboardProvider';
 
-import type { AppDesignSystemProviderProps } from './AppDesignSystemProvider.types';
+import type {
+  AppDesignSystemProviderProps,
+} from './AppDesignSystemProvider.types';
 
 /**
  * Root-level Design System provider.
  *
  * Responsibilities:
+ * - install Gesture Handler's root required by gesture-driven components;
+ * - initialize native Keyboard Controller infrastructure;
  * - keep Paper internals synchronized with the active NOVA theme;
  * - provide Paper Portal.Host;
- * - initialize native Keyboard Controller infrastructure.
+ * - provide Gorhom BottomSheetModal context.
+ *
+ * Feature code must not install duplicate provider trees.
  */
 export const AppDesignSystemProvider = ({
   children,
@@ -23,17 +35,26 @@ export const AppDesignSystemProvider = ({
 }: AppDesignSystemProviderProps) => {
   const { theme } = useUnistyles();
 
-  const paperTheme = theme.isDark
-    ? darkPaperTheme
-    : lightPaperTheme;
+  const paperTheme =
+    theme.isDark
+      ? darkPaperTheme
+      : lightPaperTheme;
 
   return (
-    <AppKeyboardProvider
-      preload={preloadKeyboard}
+    <GestureHandlerRootView
+      style={{ flex: 1 }}
     >
-      <PaperProvider theme={paperTheme}>
-        {children}
-      </PaperProvider>
-    </AppKeyboardProvider>
+      <AppKeyboardProvider
+        preload={preloadKeyboard}
+      >
+        <PaperProvider
+          theme={paperTheme}
+        >
+          <BottomSheetModalProvider>
+            {children}
+          </BottomSheetModalProvider>
+        </PaperProvider>
+      </AppKeyboardProvider>
+    </GestureHandlerRootView>
   );
 };
