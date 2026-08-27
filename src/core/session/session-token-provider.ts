@@ -7,8 +7,7 @@ export const sessionTokenProvider: AccessTokenProvider = Object.freeze({
     return sessionStore.getState().accessToken;
   },
 
-  //   REVISAR A FUTURO
-  subscribe(listener: any) {
+  subscribe(listener: (token: string | null) => void): () => void {
     return sessionStore.subscribe((state, previousState) => {
       if (state.accessToken === previousState.accessToken) {
         return;

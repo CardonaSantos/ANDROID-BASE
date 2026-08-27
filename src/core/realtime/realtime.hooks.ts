@@ -1,19 +1,47 @@
-import { useStore } from "zustand";
+import { useSyncExternalStore } from "react";
 
-import { realtimeStore } from "./_internal/realtime.store";
+import { realtimeClient } from "./realtime-client";
 
-export function useRealtimeStatus() {
-  return useStore(realtimeStore, (state) => state.status);
+import type { RealtimeStatus, RealtimeSuspendReason } from "./realtime.types";
+
+function subscribe(onStoreChange: () => void): () => void {
+  return realtimeClient.subscribeState(() => {
+    onStoreChange();
+  });
+}
+
+function getStatus(): RealtimeStatus {
+  return realtimeClient.getSnapshot().status;
+}
+
+function getSuspendReason(): RealtimeSuspendReason | null {
+  return realtimeClient.getSnapshot().suspendReason;
+}
+
+function getReconnectAttempt(): number {
+  return realtimeClient.getSnapshot().reconnectAttempt;
+}
+
+function getIsConnected(): boolean {
+  return realtimeClient.getSnapshot().status === "connected";
+}
+
+export function useRealtimeStatus(): RealtimeStatus {
+  return useSyncExternalStore(subscribe, getStatus, getStatus);
 }
 
 export function useIsRealtimeConnected(): boolean {
-  return useStore(realtimeStore, (state) => state.status === "connected");
+  return useSyncExternalStore(subscribe, getIsConnected, getIsConnected);
 }
 
-export function useRealtimeSuspendReason() {
-  return useStore(realtimeStore, (state) => state.suspendReason);
+export function useRealtimeSuspendReason(): RealtimeSuspendReason | null {
+  return useSyncExternalStore(subscribe, getSuspendReason, getSuspendReason);
 }
 
 export function useRealtimeReconnectAttempt(): number {
-  return useStore(realtimeStore, (state) => state.reconnectAttempt);
+  return useSyncExternalStore(
+    subscribe,
+    getReconnectAttempt,
+    getReconnectAttempt,
+  );
 }

@@ -20,12 +20,13 @@ const SENSITIVE_CONFIG_KEYS = [
   "refreshToken",
 ] as const;
 
-function assertRelativePath(path: string): void {
+function normalizeRelativePath(path: string): string {
   const normalized = path.trim();
 
   if (normalized.length === 0) {
     throw new AppError({
       kind: "bad_request",
+
       source: "http",
 
       code: "HTTP_EMPTY_PATH",
@@ -34,9 +35,21 @@ function assertRelativePath(path: string): void {
     });
   }
 
-  if (/^https?:\/\//i.test(normalized)) {
+  /*
+   * Feature APIs must use paths
+   * relative to the configured
+   * backend base URL.
+   *
+   * Reject explicit absolute and
+   * protocol-relative URLs.
+   */
+  if (
+    /^[a-z][a-z\d+.-]*:\/\//i.test(normalized) ||
+    normalized.startsWith("//")
+  ) {
     throw new AppError({
       kind: "bad_request",
+
       source: "http",
 
       code: "HTTP_ABSOLUTE_URL_NOT_ALLOWED",
@@ -44,6 +57,8 @@ function assertRelativePath(path: string): void {
       message: "HTTP requests must use relative paths.",
     });
   }
+
+  return normalized;
 }
 
 function buildHeaders(
@@ -56,6 +71,13 @@ function buildHeaders(
   const headers: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(source ?? {})) {
+    /*
+     * Authentication is owned by
+     * the Core token provider.
+     *
+     * Feature code cannot replace
+     * Authorization manually.
+     */
     if (key.toLowerCase() === "authorization") {
       continue;
     }
@@ -101,7 +123,7 @@ export function createHttpClient(options: CreateHttpClientOptions): HttpClient {
     async request<TData, TBody = unknown, TParams = unknown>(
       request: HttpRequest<TBody, TParams>,
     ): Promise<TData> {
-      assertRelativePath(request.path);
+      const path = normalizeRelativePath(request.path);
 
       const authMode = request.auth ?? "auto";
 
@@ -109,7 +131,7 @@ export function createHttpClient(options: CreateHttpClientOptions): HttpClient {
         authMode === "auto" ? (tokenProvider?.getAccessToken() ?? null) : null;
 
       const response = await axiosClient.request<TData>({
-        url: request.path,
+        url: path,
 
         method: request.method,
 

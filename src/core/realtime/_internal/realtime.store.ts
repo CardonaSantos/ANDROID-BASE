@@ -1,4 +1,4 @@
-import { createStore } from "zustand/vanilla";
+import { createStore, type StoreApi } from "zustand/vanilla";
 
 import type {
   RealtimeSnapshot,
@@ -22,21 +22,25 @@ export interface RealtimeInternalState {
   lastCloseCode: number | null;
 }
 
-export const realtimeStore = createStore<RealtimeInternalState>()(() => ({
-  status: "idle",
+export type RealtimeStore = StoreApi<RealtimeInternalState>;
 
-  configured: false,
+export function createRealtimeStore(configured = false): RealtimeStore {
+  return createStore<RealtimeInternalState>()(() => ({
+    status: configured ? "idle" : "disabled",
 
-  suspendReason: null,
+    configured,
 
-  reconnectAttempt: 0,
+    suspendReason: null,
 
-  connectedAt: null,
+    reconnectAttempt: 0,
 
-  disconnectedAt: null,
+    connectedAt: null,
 
-  lastCloseCode: null,
-}));
+    disconnectedAt: null,
+
+    lastCloseCode: null,
+  }));
+}
 
 export function toRealtimeSnapshot(
   state: RealtimeInternalState,

@@ -51,6 +51,22 @@ function attach(): void {
 
   previousSessionStatus = session.status;
 
+  /*
+   * A runtime may be started after
+   * an earlier lifecycle already
+   * populated the QueryClient.
+   *
+   * If the current session is
+   * anonymous, cached authenticated
+   * data must not survive merely
+   * because the transition to
+   * anonymous happened while this
+   * runtime was detached.
+   */
+  if (session.status === "anonymous") {
+    queryClient.clear();
+  }
+
   unsubscribeSession = sessionManager.subscribe((nextSession) => {
     const previous = previousSessionStatus;
 
@@ -63,8 +79,9 @@ function attach(): void {
     ) {
       /*
        * Prevent cached private
-       * data surviving logout or
-       * failed session restore.
+       * data surviving logout
+       * or a failed session
+       * restore.
        */
       queryClient.clear();
     }
@@ -87,9 +104,14 @@ function detach(): void {
   previousSessionStatus = null;
 
   /*
-   * Restore safe neutral defaults.
+   * Restore neutral defaults.
+   *
    * The runtime normally lives for
-   * the complete app lifetime.
+   * the complete application
+   * lifecycle, but restoring these
+   * values makes teardown safe for
+   * development, tests and strict
+   * lifecycle cycles.
    */
   onlineManager.setOnline(true);
 

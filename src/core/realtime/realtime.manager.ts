@@ -1,15 +1,20 @@
+import type { AppError } from "@/core/errors";
+
 import {
   REALTIME_CONNECTION_TIMEOUT_MS,
   REALTIME_NORMAL_CLOSE_CODE,
 } from "./realtime.constants";
 
-import { createRealtimeError } from "./realtime.error";
+import { createRealtimeError, normalizeRealtimeError } from "./realtime.error";
 
 import { getRealtimeReconnectDelay } from "./_internal/realtime.backoff";
 
 import { createWebSocket } from "./_internal/websocket.factory";
 
-import { realtimeStore, toRealtimeSnapshot } from "./_internal/realtime.store";
+import {
+  createRealtimeStore,
+  toRealtimeSnapshot,
+} from "./_internal/realtime.store";
 
 import type {
   CreateRealtimeManagerOptions,
@@ -33,9 +38,13 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
     connectionTimeoutMs = REALTIME_CONNECTION_TIMEOUT_MS,
   } = options;
 
+  const store = createRealtimeStore(Boolean(url));
+
   let socket: WebSocket | null = null;
 
   let desiredConnection = false;
+
+  let transportUnavailable = false;
 
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -51,20 +60,14 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
 
   const errorListeners = new Set<RealtimeErrorListener>();
 
-  realtimeStore.setState({
-    status: url ? "idle" : "disabled",
-
-    configured: Boolean(url),
-  });
-
   function getSnapshot(): RealtimeSnapshot {
-    return toRealtimeSnapshot(realtimeStore.getState());
+    return toRealtimeSnapshot(store.getState());
   }
 
   function subscribeState(
     listener: (snapshot: RealtimeSnapshot) => void,
   ): () => void {
-    return realtimeStore.subscribe((state) => {
+    return store.subscribe((state) => {
       listener(toRealtimeSnapshot(state));
     });
   }
@@ -110,13 +113,15 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
     };
   }
 
-  function emitError(error: Error): void {
+  function emitError(error: AppError): void {
     for (const listener of errorListeners) {
       try {
         listener(error);
       } catch {
-        // A consumer error must
-        // never break realtime.
+        /*
+         * A consumer error must
+         * never break realtime.
+         */
       }
     }
   }
@@ -129,8 +134,10 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
         try {
           listener(event);
         } catch {
-          // One subscriber must
-          // not break the others.
+          /*
+           * One subscriber must not
+           * break the others.
+           */
         }
       }
     }
@@ -139,7 +146,9 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
       try {
         listener(event);
       } catch {
-        // Same isolation policy.
+        /*
+         * Same isolation policy.
+         */
       }
     }
   }
@@ -180,7 +189,7 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
   }
 
   function scheduleReconnect(): void {
-    if (!desiredConnection || reconnectTimer !== null) {
+    if (!desiredConnection || transportUnavailable || reconnectTimer !== null) {
       return;
     }
 
@@ -188,7 +197,7 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
 
     reconnectAttempt += 1;
 
-    realtimeStore.setState({
+    store.setState({
       status: "reconnecting",
 
       reconnectAttempt,
@@ -211,21 +220,18 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
 
       dispatch(event);
     } catch (cause) {
-      const error =
-        cause instanceof Error
-          ? cause
-          : createRealtimeError(
-              "REALTIME_INVALID_MESSAGE",
-              "Unable to process realtime message.",
-              cause,
-            );
-
-      emitError(error);
+      emitError(
+        normalizeRealtimeError(
+          cause,
+          "REALTIME_INVALID_MESSAGE",
+          "Unable to process realtime message.",
+        ),
+      );
     }
   }
 
   function openSocket(reconnecting: boolean): void {
-    if (!desiredConnection || !url) {
+    if (!desiredConnection || !url || transportUnavailable) {
       return;
     }
 
@@ -245,14 +251,11 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
     try {
       headers = buildHeaders();
     } catch (cause) {
-      const error =
-        cause instanceof Error
-          ? cause
-          : createRealtimeError(
-              "REALTIME_CONNECTION_FAILED",
-              "Unable to prepare realtime connection.",
-              cause,
-            );
+      const error = normalizeRealtimeError(
+        cause,
+        "REALTIME_CONNECTION_FAILED",
+        "Unable to prepare realtime connection.",
+      );
 
       emitError(error);
 
@@ -261,7 +264,7 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
       return;
     }
 
-    realtimeStore.setState({
+    store.setState({
       status: reconnecting ? "reconnecting" : "connecting",
 
       suspendReason: null,
@@ -278,16 +281,21 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
         headers,
       });
     } catch (cause) {
-      const error =
-        cause instanceof Error
-          ? cause
-          : createRealtimeError(
-              "REALTIME_CONNECTION_FAILED",
-              "Unable to create realtime connection.",
-              cause,
-            );
+      const error = normalizeRealtimeError(
+        cause,
+        "REALTIME_CONNECTION_FAILED",
+        "Unable to create realtime connection.",
+      );
 
       emitError(error);
+
+      if (error.code === "REALTIME_WEB_HEADERS_UNSUPPORTED") {
+        transportUnavailable = true;
+
+        suspend("transport_unavailable");
+
+        return;
+      }
 
       scheduleReconnect();
 
@@ -311,7 +319,23 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
         ),
       );
 
-      currentSocket.close();
+      try {
+        currentSocket.close();
+      } catch (cause) {
+        emitError(
+          normalizeRealtimeError(
+            cause,
+            "REALTIME_CONNECTION_FAILED",
+            "Unable to close timed out realtime connection.",
+          ),
+        );
+
+        if (socket === currentSocket) {
+          socket = null;
+        }
+
+        scheduleReconnect();
+      }
     }, connectionTimeoutMs);
 
     currentSocket.onopen = () => {
@@ -323,7 +347,7 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
 
       reconnectAttempt = 0;
 
-      realtimeStore.setState({
+      store.setState({
         status: "connected",
 
         suspendReason: null,
@@ -365,7 +389,7 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
 
       socket = null;
 
-      realtimeStore.setState({
+      store.setState({
         disconnectedAt: Date.now(),
 
         lastCloseCode: event.code,
@@ -384,7 +408,7 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
       }
 
       if (NON_RETRYABLE_CLOSE_CODES.has(event.code)) {
-        realtimeStore.setState({
+        store.setState({
           status: "idle",
 
           reconnectAttempt: 0,
@@ -401,12 +425,26 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
 
   function resume(): void {
     if (!url) {
-      realtimeStore.setState({
+      store.setState({
         status: "disabled",
 
         configured: false,
 
         suspendReason: null,
+      });
+
+      return;
+    }
+
+    if (transportUnavailable) {
+      desiredConnection = false;
+
+      store.setState({
+        status: "suspended",
+
+        suspendReason: "transport_unavailable",
+
+        reconnectAttempt: 0,
       });
 
       return;
@@ -435,16 +473,14 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
 
     reconnectAttempt = 0;
 
-    realtimeStore.setState({
+    store.setState({
       status: url ? "suspended" : "disabled",
 
       suspendReason: url ? reason : null,
 
       reconnectAttempt: 0,
 
-      disconnectedAt: socket
-        ? Date.now()
-        : realtimeStore.getState().disconnectedAt,
+      disconnectedAt: socket ? Date.now() : store.getState().disconnectedAt,
     });
 
     const current = socket;
@@ -456,7 +492,17 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
       (current.readyState === WebSocket.OPEN ||
         current.readyState === WebSocket.CONNECTING)
     ) {
-      current.close(REALTIME_NORMAL_CLOSE_CODE, "client_suspend");
+      try {
+        current.close(REALTIME_NORMAL_CLOSE_CODE, "client_suspend");
+      } catch (cause) {
+        emitError(
+          normalizeRealtimeError(
+            cause,
+            "REALTIME_CONNECTION_FAILED",
+            "Unable to suspend realtime connection.",
+          ),
+        );
+      }
     }
   }
 
@@ -470,7 +516,7 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
 
     reconnectAttempt = 0;
 
-    realtimeStore.setState({
+    store.setState({
       status: url ? "idle" : "disabled",
 
       suspendReason: null,
@@ -482,11 +528,23 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
 
     socket = null;
 
-    current?.close(REALTIME_NORMAL_CLOSE_CODE, "client_stop");
+    if (current) {
+      try {
+        current.close(REALTIME_NORMAL_CLOSE_CODE, "client_stop");
+      } catch (cause) {
+        emitError(
+          normalizeRealtimeError(
+            cause,
+            "REALTIME_CONNECTION_FAILED",
+            "Unable to stop realtime connection.",
+          ),
+        );
+      }
+    }
   }
 
   function reconnect(): void {
-    if (!desiredConnection || !url) {
+    if (!desiredConnection || !url || transportUnavailable) {
       return;
     }
 
@@ -500,7 +558,23 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
 
     reconnectImmediately = true;
 
-    socket.close(REALTIME_NORMAL_CLOSE_CODE, "client_reconnect");
+    try {
+      socket.close(REALTIME_NORMAL_CLOSE_CODE, "client_reconnect");
+    } catch (cause) {
+      reconnectImmediately = false;
+
+      socket = null;
+
+      emitError(
+        normalizeRealtimeError(
+          cause,
+          "REALTIME_CONNECTION_FAILED",
+          "Unable to reconnect realtime connection.",
+        ),
+      );
+
+      scheduleReconnect();
+    }
   }
 
   function send(event: RealtimeOutgoingEvent): void {
@@ -513,9 +587,27 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
       );
     }
 
-    const serialized = codec.encode(event);
+    let serialized: string;
 
-    current.send(serialized);
+    try {
+      serialized = codec.encode(event);
+    } catch (cause) {
+      throw normalizeRealtimeError(
+        cause,
+        "REALTIME_SERIALIZATION_FAILED",
+        "Unable to serialize realtime message.",
+      );
+    }
+
+    try {
+      current.send(serialized);
+    } catch (cause) {
+      throw normalizeRealtimeError(
+        cause,
+        "REALTIME_SEND_FAILED",
+        "Unable to send realtime message.",
+      );
+    }
   }
 
   return Object.freeze({

@@ -1,6 +1,6 @@
 import type { AppErrorKind } from "@/core/errors";
 
-interface ParsedHttpErrorBody {
+export interface ParsedHttpErrorBody {
   message?: string;
 
   code?: string;
@@ -61,6 +61,48 @@ export function parseHttpErrorBody(body: unknown): ParsedHttpErrorBody {
 
     details: body.details,
   };
+}
+
+/*
+ * Server-provided information is
+ * intentionally restricted.
+ *
+ * Authentication failures and
+ * server failures must not expose
+ * arbitrary backend diagnostics to
+ * application consumers.
+ */
+export function shouldUseServerMessage(status: number): boolean {
+  return (
+    status === 400 ||
+    status === 404 ||
+    status === 409 ||
+    status === 422 ||
+    status === 429
+  );
+}
+
+export function shouldUseServerCode(status: number): boolean {
+  return (
+    status === 400 ||
+    status === 404 ||
+    status === 409 ||
+    status === 422 ||
+    status === 429
+  );
+}
+
+export function shouldUseServerDetails(status: number): boolean {
+  /*
+   * Details are useful mainly for
+   * structured validation and
+   * business-rule errors.
+   *
+   * Do not propagate arbitrary
+   * details from auth, not-found,
+   * rate-limit or 5xx responses.
+   */
+  return status === 400 || status === 409 || status === 422;
 }
 
 export function getHttpErrorKind(status: number): AppErrorKind {

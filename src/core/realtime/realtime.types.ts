@@ -1,3 +1,5 @@
+import type { AppError } from "@/core/errors";
+
 import type { AccessTokenProvider } from "@/core/session";
 
 export type RealtimeStatus =
@@ -12,7 +14,8 @@ export type RealtimeSuspendReason =
   | "runtime_stopped"
   | "session_unavailable"
   | "offline"
-  | "background";
+  | "background"
+  | "transport_unavailable";
 
 export type RealtimeAuthMode = "none" | "bearer-header";
 
@@ -70,4 +73,4 @@ export interface CreateRealtimeManagerOptions {
 
 export type RealtimeEventListener = (event: RealtimeEvent) => void;
 
-export type RealtimeErrorListener = (error: Error) => void;
+export type RealtimeErrorListener = (error: AppError) => void;

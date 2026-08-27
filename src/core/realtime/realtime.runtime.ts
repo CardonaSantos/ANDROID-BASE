@@ -28,6 +28,8 @@ let latestNetwork: NetworkSnapshot | null = null;
 
 let latestSession: SessionSnapshot | null = null;
 
+let latestAccessToken: string | null = null;
+
 function evaluate(): void {
   if (!realtimeClient.getSnapshot().configured) {
     realtimeClient.stop();
@@ -56,12 +58,59 @@ function evaluate(): void {
   realtimeClient.resume();
 }
 
+function handleAccessTokenChange(nextAccessToken: string | null): void {
+  const previousAccessToken = latestAccessToken;
+
+  latestAccessToken = nextAccessToken;
+
+  /*
+   * null -> token
+   *
+   * Initial login or session
+   * restoration.
+   *
+   * The session listener is
+   * responsible for evaluate()
+   * and therefore opening the
+   * connection. Reconnecting here
+   * would immediately close the
+   * socket that was just created.
+   */
+  if (previousAccessToken === null || nextAccessToken === null) {
+    return;
+  }
+
+  /*
+   * token A -> token B
+   *
+   * An authenticated credential
+   * was rotated, normally by a
+   * refresh operation.
+   *
+   * A live realtime connection may
+   * still have been authenticated
+   * with the previous token, so it
+   * must reconnect.
+   */
+  if (previousAccessToken === nextAccessToken) {
+    return;
+  }
+
+  if (latestSession?.status !== "authenticated") {
+    return;
+  }
+
+  realtimeClient.reconnect();
+}
+
 function attach(): void {
   releaseNetworkRuntime = networkRuntime.start();
 
   latestNetwork = networkManager.getSnapshot();
 
   latestSession = sessionManager.getSnapshot();
+
+  latestAccessToken = sessionTokenProvider.getAccessToken();
 
   unsubscribeNetwork = networkManager.subscribe((snapshot) => {
     latestNetwork = snapshot;
@@ -75,11 +124,7 @@ function attach(): void {
     evaluate();
   });
 
-  unsubscribeToken = sessionTokenProvider.subscribe(() => {
-    if (latestSession?.status === "authenticated") {
-      realtimeClient.reconnect();
-    }
-  });
+  unsubscribeToken = sessionTokenProvider.subscribe(handleAccessTokenChange);
 
   evaluate();
 }
@@ -104,6 +149,8 @@ function detach(): void {
   latestNetwork = null;
 
   latestSession = null;
+
+  latestAccessToken = null;
 
   realtimeClient.stop();
 }

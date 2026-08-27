@@ -1,4 +1,4 @@
-import { AppError } from "@/core/errors";
+import { AppError, isAppError } from "@/core/errors";
 
 export type RealtimeErrorCode =
   | "REALTIME_NOT_CONNECTED"
@@ -8,6 +8,7 @@ export type RealtimeErrorCode =
   | "REALTIME_SOCKET_ERROR"
   | "REALTIME_INVALID_MESSAGE"
   | "REALTIME_SERIALIZATION_FAILED"
+  | "REALTIME_SEND_FAILED"
   | "REALTIME_WEB_HEADERS_UNSUPPORTED";
 
 export function createRealtimeError(
@@ -17,13 +18,21 @@ export function createRealtimeError(
 ): AppError {
   return new AppError({
     kind: "realtime",
-
     source: "realtime",
-
     code,
-
     message,
-
     cause,
   });
+}
+
+export function normalizeRealtimeError(
+  cause: unknown,
+  fallbackCode: RealtimeErrorCode,
+  fallbackMessage: string,
+): AppError {
+  if (isAppError(cause) && cause.source === "realtime") {
+    return cause;
+  }
+
+  return createRealtimeError(fallbackCode, fallbackMessage, cause);
 }

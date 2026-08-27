@@ -1,10 +1,10 @@
 import { createSessionError } from "./session.error";
 
 import {
-  clearPersistedSession,
   persistAccessToken,
   persistRefreshToken,
   readPersistedSession,
+  revokePersistedSession,
 } from "./session.storage";
 
 import { enqueueSessionOperation } from "./_internal/session-operation-queue";
@@ -46,6 +46,20 @@ function createAnonymousState(): SessionInternalState {
   };
 }
 
+function createHydratingState(): SessionInternalState {
+  return {
+    status: "hydrating",
+
+    hydrated: false,
+
+    accessToken: null,
+
+    refreshToken: null,
+
+    persistenceStrategy: null,
+  };
+}
+
 function toSnapshot(state: SessionInternalState): SessionSnapshot {
   return {
     status: state.status,
@@ -77,35 +91,47 @@ async function hydrate(): Promise<void> {
         return;
       }
 
-      if (persisted.strategy === "refresh-token") {
-        sessionStore.setState({
-          status: "restoring",
+      switch (persisted.strategy) {
+        case "none": {
+          sessionStore.setState(createAnonymousState());
 
-          hydrated: true,
+          return;
+        }
 
-          accessToken: null,
+        case "refresh-token": {
+          sessionStore.setState({
+            status: "restoring",
 
-          refreshToken: persisted.refreshToken,
+            hydrated: true,
 
-          persistenceStrategy: "refresh-token",
-        });
+            accessToken: null,
 
-        return;
+            refreshToken: persisted.refreshToken,
+
+            persistenceStrategy: "refresh-token",
+          });
+
+          return;
+        }
+
+        case "access-token": {
+          sessionStore.setState({
+            status: "authenticated",
+
+            hydrated: true,
+
+            accessToken: persisted.accessToken,
+
+            refreshToken: null,
+
+            persistenceStrategy: "access-token",
+          });
+
+          return;
+        }
       }
-
-      sessionStore.setState({
-        status: "authenticated",
-
-        hydrated: true,
-
-        accessToken: persisted.accessToken,
-
-        refreshToken: null,
-
-        persistenceStrategy: "access-token",
-      });
     } catch (error) {
-      sessionStore.setState(createAnonymousState());
+      sessionStore.setState(createHydratingState());
 
       throw error;
     }
@@ -129,7 +155,13 @@ async function establish(input: EstablishSessionInput): Promise<void> {
 
     switch (persistence.strategy) {
       case "none": {
-        await clearPersistedSession();
+        /*
+         * Ensure that a previously
+         * persisted credential cannot
+         * survive this new in-memory-only
+         * session.
+         */
+        await revokePersistedSession();
 
         sessionStore.setState({
           status: "authenticated",
@@ -303,12 +335,20 @@ async function updateTokens(input: UpdateSessionTokensInput): Promise<void> {
 
 async function clear(): Promise<void> {
   return enqueueSessionOperation(async () => {
-    // Immediately revoke the
-    // credential from runtime users
-    // such as HTTP and realtime.
-    sessionStore.setState(createAnonymousState());
+    /*
+     * Persisted credentials must
+     * be safely revoked before we
+     * report the session as logged
+     * out in memory.
+     *
+     * If revocation cannot be
+     * guaranteed, the operation
+     * fails and the current runtime
+     * session remains intact.
+     */
+    await revokePersistedSession();
 
-    await clearPersistedSession();
+    sessionStore.setState(createAnonymousState());
   });
 }
 
