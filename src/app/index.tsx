@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import {
+  useState,
+} from 'react';
 import {
   Activity,
   Boxes,
@@ -13,7 +15,6 @@ import {
 import {
   AppAccordion,
   AppAlert,
-  AppAvatar,
   AppBadge,
   AppButton,
   AppCard,
@@ -29,7 +30,6 @@ import {
   AppSection,
   AppSectionHeader,
   AppSegmentedControl,
-  AppSelect,
   AppSkeleton,
   AppStack,
   AppStat,
@@ -66,32 +66,8 @@ const densityOptions = [
   },
 ] as const;
 
-const demoRoleOptions = [
-  {
-    value: 'admin',
-    label: 'Administrador',
-    description:
-      'Acceso completo a la plataforma.',
-  },
-  {
-    value: 'operator',
-    label: 'Operador',
-    description:
-      'Operación diaria y seguimiento.',
-  },
-  {
-    value: 'viewer',
-    label: 'Consulta',
-    description:
-      'Acceso de solo lectura.',
-  },
-] as const;
-
 type DemoDensity =
   (typeof densityOptions)[number]['value'];
-
-type DemoRole =
-  (typeof demoRoleOptions)[number]['value'];
 
 export default function HomeScreen() {
   const [
@@ -101,35 +77,43 @@ export default function HomeScreen() {
     themeController.getPreference(),
   );
 
-  const [density, setDensity] =
-    useState<DemoDensity>(
-      'comfortable',
-    );
+  const [
+    density,
+    setDensity,
+  ] = useState<DemoDensity>(
+    'comfortable',
+  );
 
-  const [role, setRole] =
-    useState<DemoRole | null>(
-      'admin',
-    );
+  const [
+    name,
+    setName,
+  ] = useState('NOVA');
 
-  const [name, setName] =
-    useState('NOVA');
+  const [
+    search,
+    setSearch,
+  ] = useState('');
 
-  const [search, setSearch] =
-    useState('');
+  const [
+    notifications,
+    setNotifications,
+  ] = useState(true);
 
-  const [notifications, setNotifications] =
-    useState(true);
+  const [
+    confirmed,
+    setConfirmed,
+  ] = useState(false);
 
-  const [confirmed, setConfirmed] =
-    useState(false);
-
-  const [toastOpen, setToastOpen] =
-    useState(false);
+  const [
+    toastOpen,
+    setToastOpen,
+  ] = useState(false);
 
   const changeTheme = (
     value: ThemePreference,
   ) => {
     setThemePreference(value);
+
     themeController.setPreference(
       value,
     );
@@ -141,14 +125,15 @@ export default function HomeScreen() {
         background="background"
         contained
         maxWidth="page"
+        gutter="standard"
+        contentPaddingVertical="2xl"
+        keyboardShouldPersistTaps="handled"
         safeAreaEdges={[
           'top',
           'left',
           'right',
           'bottom',
         ]}
-        contentPaddingVertical="2xl"
-        keyboardShouldPersistTaps="handled"
       >
         <AppStack gap="3xl">
           <AppCard
@@ -157,66 +142,47 @@ export default function HomeScreen() {
             padding="2xl"
           >
             <AppStack gap="xl">
-              <AppInline
-                gap="md"
-                align="center"
-                wrap
-              >
-                <AppAvatar
-                  name="NOVA"
-                  tone="primary"
-                  size="lg"
-                />
-
-                <AppStack
-                  gap="xs"
-                  flex
+              <AppStack gap="md">
+                <AppInline
+                  gap="sm"
+                  wrap
                 >
-                  <AppInline
-                    gap="sm"
-                    align="center"
-                    wrap
+                  <AppBadge
+                    tone="primary"
+                    variant="solid"
                   >
-                    <AppBadge
-                      tone="primary"
-                      variant="solid"
-                    >
-                      NOVA BASE
-                    </AppBadge>
+                    NOVA BASE
+                  </AppBadge>
 
-                    <AppBadge
-                      tone="success"
-                      variant="soft"
-                      icon={
-                        CheckCircle2
-                      }
-                    >
-                      Design System activo
-                    </AppBadge>
-                  </AppInline>
-
-                  <AppText
-                    variant="headlineLarge"
-                    weight="bold"
+                  <AppBadge
+                    tone="success"
+                    variant="soft"
+                    icon={
+                      CheckCircle2
+                    }
                   >
-                    Una base visual, una sola
-                    fuente de verdad.
-                  </AppText>
+                    Baseline activa
+                  </AppBadge>
+                </AppInline>
 
-                  <AppText
-                    variant="bodyLarge"
-                    tone="secondary"
-                  >
-                    Esta portada usa los
-                    componentes reutilizables
-                    construidos para NOVA.
-                    Cambia el tema, interactúa
-                    con los controles y valida
-                    la base antes de comenzar
-                    las features reales.
-                  </AppText>
-                </AppStack>
-              </AppInline>
+                <AppText
+                  variant="headlineLarge"
+                  weight="bold"
+                >
+                  Design System NOVA
+                </AppText>
+
+                <AppText
+                  variant="bodyLarge"
+                  tone="secondary"
+                >
+                  Una portada temporal para
+                  comprobar composición,
+                  responsive, temas, formularios,
+                  estados y feedback antes de
+                  construir las features reales.
+                </AppText>
+              </AppStack>
 
               <AppInline
                 gap="md"
@@ -252,24 +218,8 @@ export default function HomeScreen() {
             gap="lg"
             header={
               <AppSectionHeader
-                title="Tema y apariencia"
-                description="Todo cambia desde los tokens y el controlador central."
-                leading={
-                  <AppAvatar
-                    fallback={null}
-                    tone="primary"
-                    size="sm"
-                    name="UI"
-                  />
-                }
-                action={
-                  <AppBadge
-                    tone="info"
-                    variant="soft"
-                  >
-                    system / light / dark
-                  </AppBadge>
-                }
+                title="Tema"
+                description="System, light y dark desde una sola configuración."
               />
             }
           >
@@ -295,12 +245,12 @@ export default function HomeScreen() {
                 <AppAlert
                   tone="info"
                   density="compact"
-                  title="Sin colores hardcodeados"
+                  title="Tokens semánticos"
                 >
-                  Fondo, superficies, texto,
-                  bordes, estados y contraste
-                  provienen del tema semántico
-                  NOVA.
+                  Esta página no define colores
+                  de fondo, texto o estados por
+                  su cuenta. Todo proviene del
+                  tema NOVA.
                 </AppAlert>
               </AppStack>
             </AppCard>
@@ -310,26 +260,19 @@ export default function HomeScreen() {
             gap="lg"
             header={
               <AppSectionHeader
-                title="Resumen visual"
-                description="Composiciones responsivas construidas con AppGrid y AppStat."
-                leading={
-                  <AppAvatar
-                    name="ST"
-                    tone="info"
-                    size="sm"
-                  />
-                }
+                title="Resumen"
+                description="Composición responsive con nuestras primitivas."
               />
             }
           >
             <AppGrid
               gap="lg"
-              minItemWidth={210}
+              minItemWidth={220}
             >
               <AppStat
                 label="Componentes"
                 value="74"
-                description="Inventario reusable"
+                description="Baseline reusable"
                 icon={Boxes}
                 tone="primary"
                 variant="tonal"
@@ -340,20 +283,20 @@ export default function HomeScreen() {
                 value={
                   themePreference
                 }
-                description="Preferencia activa"
+                description="Preferencia actual"
                 icon={Palette}
                 tone="info"
                 variant="outlined"
               />
 
               <AppStat
-                label="Estado demo"
+                label="Demo"
                 value={
                   confirmed
-                    ? 'Listo'
+                    ? 'Lista'
                     : 'Pendiente'
                 }
-                description="UI reactiva"
+                description="Estado interactivo"
                 icon={Activity}
                 tone={
                   confirmed
@@ -369,15 +312,8 @@ export default function HomeScreen() {
             gap="lg"
             header={
               <AppSectionHeader
-                title="Acciones y estados"
-                description="Variantes semánticas, feedback y selección."
-                leading={
-                  <AppAvatar
-                    name="AC"
-                    tone="success"
-                    size="sm"
-                  />
-                }
+                title="Acciones"
+                description="Variantes, tonos y selección sin estilos locales."
               />
             }
           >
@@ -391,7 +327,6 @@ export default function HomeScreen() {
                   wrap
                 >
                   <AppButton
-                    tone="primary"
                     leadingIcon={Zap}
                     onPress={() => {
                       setToastOpen(true);
@@ -435,7 +370,9 @@ export default function HomeScreen() {
 
                   <AppChip
                     tone="info"
-                    leadingIcon={Layers3}
+                    leadingIcon={
+                      Layers3
+                    }
                   >
                     Reutilizable
                   </AppChip>
@@ -456,7 +393,6 @@ export default function HomeScreen() {
                   onValueChange={
                     setDensity
                   }
-                  tone="primary"
                   accessibilityLabel="Densidad de ejemplo"
                 />
               </AppStack>
@@ -468,14 +404,7 @@ export default function HomeScreen() {
             header={
               <AppSectionHeader
                 title="Formularios"
-                description="Controles visuales desacoplados de la validación de negocio."
-                leading={
-                  <AppAvatar
-                    name="FM"
-                    tone="warning"
-                    size="sm"
-                  />
-                }
+                description="Inputs controlados preparados para conectarse después a RHF y Zod."
               />
             }
           >
@@ -485,11 +414,13 @@ export default function HomeScreen() {
             >
               <AppStack gap="xl">
                 <AppInput
-                  label="Nombre de ejemplo"
+                  label="Nombre"
                   value={name}
-                  onChangeText={setName}
+                  onChangeText={
+                    setName
+                  }
                   placeholder="Escribe un nombre"
-                  description="AppInput puede usarse solo o conectado a React Hook Form."
+                  description="Control visual reusable."
                 />
 
                 <AppSearchInput
@@ -504,21 +435,9 @@ export default function HomeScreen() {
                   }}
                 />
 
-                <AppSelect
-                  label="Rol de ejemplo"
-                  options={
-                    demoRoleOptions
-                  }
-                  value={role}
-                  onValueChange={
-                    setRole
-                  }
-                  placeholder="Selecciona un rol"
-                />
-
                 <AppSwitch
                   label="Notificaciones"
-                  description="Ejemplo de un control booleano."
+                  description="Control booleano reusable."
                   value={
                     notifications
                   }
@@ -529,8 +448,10 @@ export default function HomeScreen() {
 
                 <AppCheckbox
                   label="Confirmar selección"
-                  description="Estado controlado desde la página."
-                  value={confirmed}
+                  description="Estado controlado desde la pantalla."
+                  value={
+                    confirmed
+                  }
                   onValueChange={
                     setConfirmed
                   }
@@ -543,15 +464,8 @@ export default function HomeScreen() {
             gap="lg"
             header={
               <AppSectionHeader
-                title="Feedback y carga"
-                description="Estados reutilizables sin lógica de negocio embebida."
-                leading={
-                  <AppAvatar
-                    name="FX"
-                    tone="danger"
-                    size="sm"
-                  />
-                }
+                title="Feedback"
+                description="Carga, progreso y estados semánticos."
               />
             }
           >
@@ -575,7 +489,7 @@ export default function HomeScreen() {
                     value={72}
                     showValue
                     tone="primary"
-                    accessibilityLabel="Progreso de demostración"
+                    accessibilityLabel="Progreso lineal de demostración"
                   />
 
                   <AppProgress
@@ -630,10 +544,9 @@ export default function HomeScreen() {
                   : 'Demo en revisión'
               }
             >
-              El mismo componente cambia
-              semánticamente sin recibir
-              códigos hexadecimales ni estilos
-              de negocio.
+              El componente cambia de tono
+              semántico sin recibir códigos de
+              color desde esta pantalla.
             </AppAlert>
           </AppSection>
 
@@ -642,14 +555,7 @@ export default function HomeScreen() {
             header={
               <AppSectionHeader
                 title="Contenido compuesto"
-                description="Filas y acordeones para construir pantallas reales."
-                leading={
-                  <AppAvatar
-                    name="UI"
-                    tone="neutral"
-                    size="sm"
-                  />
-                }
+                description="Bloques que después podremos usar dentro de features reales."
               />
             }
           >
@@ -659,15 +565,8 @@ export default function HomeScreen() {
             >
               <AppListItem
                 title="Sistema de diseño"
-                description="Tokens, temas, movimiento y accesibilidad."
+                description="Theme, tokens, motion y accesibilidad."
                 metadata="Core"
-                leading={
-                  <AppAvatar
-                    name="DS"
-                    tone="primary"
-                    size="sm"
-                  />
-                }
                 disclosure
                 onPress={() => {
                   setToastOpen(true);
@@ -676,15 +575,8 @@ export default function HomeScreen() {
 
               <AppListItem
                 title="Componentes reutilizables"
-                description="Forms, overlays, navegación, feedback y colecciones."
+                description="Forms, overlays, feedback, navegación y colecciones."
                 metadata="74"
-                leading={
-                  <AppAvatar
-                    name="UI"
-                    tone="info"
-                    size="sm"
-                  />
-                }
                 disclosure
                 onPress={() => {
                   setToastOpen(true);
@@ -693,8 +585,8 @@ export default function HomeScreen() {
             </AppCard>
 
             <AppAccordion
-              title="¿Qué valida esta página?"
-              description="Una comprobación visual de la baseline NOVA."
+              title="¿Qué demuestra esta página?"
+              description="Una comprobación visual, no una feature de negocio."
               tone="primary"
               variant="tonal"
               defaultExpanded
@@ -704,11 +596,12 @@ export default function HomeScreen() {
                   variant="bodyMedium"
                   tone="secondary"
                 >
-                  Valida composición, tipografía,
-                  temas, estados, interacción,
-                  formularios, feedback y
-                  responsive layout usando
-                  únicamente nuestra API pública.
+                  Cuando empecemos auth,
+                  clientes, tickets o e-shop,
+                  reutilizaremos estas mismas
+                  piezas sin volver a resolver
+                  layout, theme y estados desde
+                  cero.
                 </AppText>
 
                 <AppInline
@@ -739,43 +632,6 @@ export default function HomeScreen() {
               </AppStack>
             </AppAccordion>
           </AppSection>
-
-          <AppCard
-            variant="tonal"
-            tone="neutral"
-            padding="xl"
-          >
-            <AppStack
-              gap="sm"
-              align="center"
-            >
-              <AppAvatar
-                name="NV"
-                tone="primary"
-                size="lg"
-              />
-
-              <AppText
-                variant="titleMedium"
-                weight="semibold"
-                align="center"
-              >
-                NOVA baseline
-              </AppText>
-
-              <AppText
-                variant="bodySmall"
-                tone="secondary"
-                align="center"
-              >
-                Esta pantalla es temporal. A
-                partir de aquí iremos
-                sustituyendo la demo por rutas y
-                features reales sin rehacer la
-                infraestructura visual.
-              </AppText>
-            </AppStack>
-          </AppCard>
         </AppStack>
       </AppScrollScreen>
 
@@ -784,7 +640,7 @@ export default function HomeScreen() {
         onOpenChange={
           setToastOpen
         }
-        message="Los componentes NOVA están respondiendo correctamente."
+        message="NOVA Design System está respondiendo correctamente."
         tone="success"
         position="bottom"
       />

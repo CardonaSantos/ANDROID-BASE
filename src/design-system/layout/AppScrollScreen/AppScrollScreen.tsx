@@ -9,15 +9,30 @@ import {
 import {
   SafeAreaView,
 } from 'react-native-safe-area-context';
-import { StyleSheet } from 'react-native-unistyles';
+import {
+  StyleSheet,
+} from 'react-native-unistyles';
 
-import { AppContainer } from '../AppContainer';
-import { DEFAULT_SCREEN_SAFE_AREA_EDGES } from '../screen.constants';
+import {
+  AppContainer,
+} from '../AppContainer';
+import {
+  DEFAULT_SCREEN_SAFE_AREA_EDGES,
+} from '../screen.constants';
 
 import type {
   AppScrollScreenProps,
 } from './AppScrollScreen.types';
 
+/**
+ * Full-screen scrolling layout.
+ *
+ * Use this for normal screens whose content may become taller than the
+ * viewport. The ScrollView remains the scrolling owner on native platforms.
+ *
+ * `minHeight: 0` is intentional on the flex chain: scroll containers need a
+ * bounded parent and must be allowed to shrink below their content size.
+ */
 export const AppScrollScreen =
   forwardRef<
     ComponentRef<typeof ScrollView>,
@@ -37,8 +52,10 @@ export const AppScrollScreen =
         contentStyle,
         scrollStyle,
         scrollContentStyle,
-        keyboardShouldPersistTaps = 'handled',
-        keyboardDismissMode = 'on-drag',
+        keyboardShouldPersistTaps =
+          'handled',
+        keyboardDismissMode =
+          'on-drag',
         ...rest
       },
       ref,
@@ -46,7 +63,9 @@ export const AppScrollScreen =
       <SafeAreaView
         edges={safeAreaEdges}
         style={[
-          styles.root(background),
+          styles.root(
+            background,
+          ),
           style,
         ]}
       >
@@ -110,16 +129,21 @@ const styles = StyleSheet.create(
         | 'surfaceSecondary',
     ) => ({
       flex: 1,
+      minHeight: 0,
+      width: '100%',
       backgroundColor:
         theme.colors[background],
     }),
 
     scroll: {
       flex: 1,
+      minHeight: 0,
+      width: '100%',
     },
 
     scrollContent: {
       flexGrow: 1,
+      width: '100%',
     },
 
     content: (
@@ -127,6 +151,7 @@ const styles = StyleSheet.create(
         keyof typeof theme.spacing,
     ) => ({
       flexGrow: 1,
+      width: '100%',
       paddingVertical:
         theme.spacing[
           paddingVertical
@@ -138,6 +163,7 @@ const styles = StyleSheet.create(
         keyof typeof theme.spacing,
     ) => ({
       flexGrow: 1,
+      width: '100%',
       paddingVertical:
         theme.spacing[
           paddingVertical

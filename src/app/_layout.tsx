@@ -1,10 +1,21 @@
 import '@/design-system/bootstrap';
 
-import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import {
+  useEffect,
+} from 'react';
+import {
+  View,
+} from 'react-native';
+import {
+  Slot,
+} from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useUnistyles } from 'react-native-unistyles';
+import {
+  StatusBar,
+} from 'expo-status-bar';
+import {
+  useUnistyles,
+} from 'react-native-unistyles';
 
 import {
   AppDesignSystemProvider,
@@ -14,28 +25,40 @@ import {
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] =
-    useAppFonts();
+  const [
+    fontsLoaded,
+    fontError,
+  ] = useAppFonts();
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (
+      fontsLoaded ||
+      fontError
+    ) {
       void SplashScreen.hideAsync();
     }
-  }, [fontError, fontsLoaded]);
+  }, [
+    fontError,
+    fontsLoaded,
+  ]);
 
-  if (!fontsLoaded && !fontError) {
+  if (
+    !fontsLoaded &&
+    !fontError
+  ) {
     return null;
   }
 
   return (
     <AppDesignSystemProvider>
-      <AppRootNavigation />
+      <AppRoot />
     </AppDesignSystemProvider>
   );
 }
 
-function AppRootNavigation() {
-  const { theme } = useUnistyles();
+function AppRoot() {
+  const { theme } =
+    useUnistyles();
 
   return (
     <>
@@ -47,11 +70,18 @@ function AppRootNavigation() {
         }
       />
 
-      <Stack
-        screenOptions={{
-          headerShown: false,
+      <View
+        style={{
+          flex: 1,
+          minHeight: 0,
+          width: '100%',
+          backgroundColor:
+            theme.colors
+              .background,
         }}
-      />
+      >
+        <Slot />
+      </View>
     </>
   );
 }
