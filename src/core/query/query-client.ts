@@ -7,7 +7,7 @@ import {
 
 import { getQueryRetryDelay, shouldRetryQuery } from "./query.retry";
 
-export function createAppQueryClient(): QueryClient {
+function createAppQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
       queries: {
