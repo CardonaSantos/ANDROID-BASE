@@ -25,13 +25,23 @@ export function AppCoreProvider({
 
   const error = useAppCoreError();
 
-  useEffect(() => appCoreRuntime.start(), []);
+  useEffect(() => {
+    const release = appCoreRuntime.start();
+
+    return release;
+  }, []);
 
   if (status === "idle" || status === "booting") {
     return loadingFallback;
   }
 
-  if (status === "error" && error) {
+  if (status === "error") {
+    if (!error) {
+      throw new Error(
+        "Application core entered an error state without an error.",
+      );
+    }
+
     if (renderError) {
       return renderError({
         error,
