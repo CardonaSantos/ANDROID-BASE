@@ -1,0 +1,9 @@
+export const DEFAULT_QUERY_STALE_TIME_MS = 30_000;
+
+export const DEFAULT_QUERY_GC_TIME_MS = 10 * 60 * 1000;
+
+export const DEFAULT_QUERY_RETRY_COUNT = 2;
+
+export const QUERY_RETRY_BASE_DELAY_MS = 1_000;
+
+export const QUERY_RETRY_MAX_DELAY_MS = 30_000;
