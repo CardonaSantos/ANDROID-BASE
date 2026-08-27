@@ -1,122 +1,44 @@
-import {
-  useState,
-} from 'react';
-import {
-  Activity,
-  Boxes,
-  CheckCircle2,
-  Layers3,
-  Palette,
-  ShieldCheck,
-  Sparkles,
-  Zap,
-} from 'lucide-react-native';
+import { useState } from "react";
 
 import {
-  AppAccordion,
+  Activity,
+  Bell,
+  CheckCircle2,
+  Clock3,
+  Package,
+  RefreshCw,
+  ShoppingCart,
+  TrendingUp,
+  Users,
+  WalletCards,
+} from "lucide-react-native";
+
+import {
   AppAlert,
   AppBadge,
   AppButton,
   AppCard,
-  AppCheckbox,
-  AppChip,
   AppGrid,
   AppInline,
-  AppInput,
   AppListItem,
   AppProgress,
   AppScrollScreen,
-  AppSearchInput,
   AppSection,
   AppSectionHeader,
-  AppSegmentedControl,
-  AppSkeleton,
   AppStack,
   AppStat,
-  AppSwitch,
   AppText,
   AppToast,
-  themeController,
-  type ThemePreference,
-} from '@/design-system';
-
-const themeOptions = [
-  {
-    value: 'system',
-    label: 'Sistema',
-  },
-  {
-    value: 'light',
-    label: 'Claro',
-  },
-  {
-    value: 'dark',
-    label: 'Oscuro',
-  },
-] as const;
-
-const densityOptions = [
-  {
-    value: 'comfortable',
-    label: 'Cómodo',
-  },
-  {
-    value: 'compact',
-    label: 'Compacto',
-  },
-] as const;
-
-type DemoDensity =
-  (typeof densityOptions)[number]['value'];
+} from "@/design-system";
 
 export default function HomeScreen() {
-  const [
-    themePreference,
-    setThemePreference,
-  ] = useState<ThemePreference>(
-    themeController.getPreference(),
-  );
+  const [toastOpen, setToastOpen] = useState(false);
 
-  const [
-    density,
-    setDensity,
-  ] = useState<DemoDensity>(
-    'comfortable',
-  );
+  const [synced, setSynced] = useState(true);
 
-  const [
-    name,
-    setName,
-  ] = useState('NOVA');
-
-  const [
-    search,
-    setSearch,
-  ] = useState('');
-
-  const [
-    notifications,
-    setNotifications,
-  ] = useState(true);
-
-  const [
-    confirmed,
-    setConfirmed,
-  ] = useState(false);
-
-  const [
-    toastOpen,
-    setToastOpen,
-  ] = useState(false);
-
-  const changeTheme = (
-    value: ThemePreference,
-  ) => {
-    setThemePreference(value);
-
-    themeController.setPreference(
-      value,
-    );
+  const handleRefresh = () => {
+    setSynced(true);
+    setToastOpen(true);
   };
 
   return (
@@ -126,447 +48,139 @@ export default function HomeScreen() {
         contained
         maxWidth="page"
         gutter="standard"
-        contentPaddingVertical="2xl"
-        keyboardShouldPersistTaps="handled"
-        safeAreaEdges={[
-          'top',
-          'left',
-          'right',
-          'bottom',
-        ]}
+        contentPaddingVertical="xl"
       >
-        <AppStack gap="3xl">
-          <AppCard
-            variant="tonal"
-            tone="primary"
-            padding="2xl"
-          >
-            <AppStack gap="xl">
-              <AppStack gap="md">
-                <AppInline
-                  gap="sm"
-                  wrap
-                >
-                  <AppBadge
-                    tone="primary"
-                    variant="solid"
-                  >
-                    NOVA BASE
-                  </AppBadge>
+        <AppStack gap="2xl">
+          <AppStack gap="md">
+            <AppInline gap="sm" wrap>
+              <AppBadge tone="primary" variant="soft">
+                NOVA
+              </AppBadge>
 
-                  <AppBadge
-                    tone="success"
-                    variant="soft"
-                    icon={
-                      CheckCircle2
-                    }
-                  >
-                    Baseline activa
-                  </AppBadge>
-                </AppInline>
-
-                <AppText
-                  variant="headlineLarge"
-                  weight="bold"
-                >
-                  Design System NOVA
-                </AppText>
-
-                <AppText
-                  variant="bodyLarge"
-                  tone="secondary"
-                >
-                  Una portada temporal para
-                  comprobar composición,
-                  responsive, temas, formularios,
-                  estados y feedback antes de
-                  construir las features reales.
-                </AppText>
-              </AppStack>
-
-              <AppInline
-                gap="md"
-                wrap
+              <AppBadge
+                tone={synced ? "success" : "warning"}
+                variant="soft"
+                icon={synced ? CheckCircle2 : Clock3}
               >
-                <AppButton
-                  leadingIcon={Sparkles}
-                  onPress={() => {
-                    setToastOpen(true);
-                  }}
-                >
-                  Probar feedback
-                </AppButton>
+                {synced ? "Sincronizado" : "Pendiente"}
+              </AppBadge>
+            </AppInline>
 
-                <AppButton
-                  variant="outlined"
-                  tone="neutral"
-                  leadingIcon={ShieldCheck}
-                  onPress={() => {
-                    setConfirmed(
-                      (current) =>
-                        !current,
-                    );
-                  }}
-                >
-                  Alternar estado
-                </AppButton>
-              </AppInline>
-            </AppStack>
-          </AppCard>
+            <AppText variant="headlineLarge" weight="bold">
+              Dashboard
+            </AppText>
 
-          <AppSection
-            gap="lg"
-            header={
-              <AppSectionHeader
-                title="Tema"
-                description="System, light y dark desde una sola configuración."
-              />
-            }
-          >
-            <AppCard
+            <AppText variant="bodyLarge" tone="secondary">
+              Vista general de la aplicación y actividad reciente.
+            </AppText>
+          </AppStack>
+
+          <AppGrid gap="lg" minItemWidth={210}>
+            <AppStat
+              label="Clientes"
+              value="1,284"
+              description="+24 este mes"
+              icon={Users}
+              tone="primary"
+              variant="tonal"
+            />
+
+            <AppStat
+              label="Ventas"
+              value="Q 24,850"
+              description="+8.4% mensual"
+              icon={TrendingUp}
+              tone="success"
+              variant="tonal"
+            />
+
+            <AppStat
+              label="Pedidos"
+              value="86"
+              description="12 pendientes"
+              icon={ShoppingCart}
+              tone="info"
               variant="outlined"
-              padding="lg"
-            >
-              <AppStack gap="lg">
-                <AppSegmentedControl
-                  options={
-                    themeOptions
-                  }
-                  value={
-                    themePreference
-                  }
-                  onValueChange={
-                    changeTheme
-                  }
-                  fullWidth
-                  accessibilityLabel="Tema de la aplicación"
-                />
+            />
 
-                <AppAlert
-                  tone="info"
-                  density="compact"
-                  title="Tokens semánticos"
-                >
-                  Esta página no define colores
-                  de fondo, texto o estados por
-                  su cuenta. Todo proviene del
-                  tema NOVA.
-                </AppAlert>
-              </AppStack>
-            </AppCard>
-          </AppSection>
-
-          <AppSection
-            gap="lg"
-            header={
-              <AppSectionHeader
-                title="Resumen"
-                description="Composición responsive con nuestras primitivas."
-              />
-            }
-          >
-            <AppGrid
-              gap="lg"
-              minItemWidth={220}
-            >
-              <AppStat
-                label="Componentes"
-                value="74"
-                description="Baseline reusable"
-                icon={Boxes}
-                tone="primary"
-                variant="tonal"
-              />
-
-              <AppStat
-                label="Tema"
-                value={
-                  themePreference
-                }
-                description="Preferencia actual"
-                icon={Palette}
-                tone="info"
-                variant="outlined"
-              />
-
-              <AppStat
-                label="Demo"
-                value={
-                  confirmed
-                    ? 'Lista'
-                    : 'Pendiente'
-                }
-                description="Estado interactivo"
-                icon={Activity}
-                tone={
-                  confirmed
-                    ? 'success'
-                    : 'warning'
-                }
-                variant="tonal"
-              />
-            </AppGrid>
-          </AppSection>
-
-          <AppSection
-            gap="lg"
-            header={
-              <AppSectionHeader
-                title="Acciones"
-                description="Variantes, tonos y selección sin estilos locales."
-              />
-            }
-          >
-            <AppCard
+            <AppStat
+              label="Inventario"
+              value="942"
+              description="18 con stock bajo"
+              icon={Package}
+              tone="warning"
               variant="outlined"
-              padding="lg"
-            >
+            />
+          </AppGrid>
+
+          <AppSection
+            gap="lg"
+            header={
+              <AppSectionHeader
+                title="Resumen financiero"
+                description="Actividad del período actual."
+              />
+            }
+          >
+            <AppCard variant="outlined" padding="lg">
               <AppStack gap="xl">
-                <AppInline
-                  gap="md"
-                  wrap
-                >
-                  <AppButton
-                    leadingIcon={Zap}
-                    onPress={() => {
-                      setToastOpen(true);
-                    }}
-                  >
-                    Primaria
-                  </AppButton>
+                <AppInline gap="lg" wrap>
+                  <AppStack gap="xs">
+                    <AppText variant="labelMedium" tone="secondary">
+                      Ingresos
+                    </AppText>
 
-                  <AppButton
-                    variant="soft"
-                    tone="success"
-                  >
-                    Success
-                  </AppButton>
+                    <AppText variant="titleLarge" weight="bold">
+                      Q 24,850
+                    </AppText>
+                  </AppStack>
 
-                  <AppButton
-                    variant="outlined"
-                    tone="warning"
-                  >
-                    Warning
-                  </AppButton>
+                  <AppStack gap="xs">
+                    <AppText variant="labelMedium" tone="secondary">
+                      Pendiente
+                    </AppText>
 
-                  <AppButton
-                    variant="ghost"
-                    tone="danger"
-                  >
-                    Danger
-                  </AppButton>
+                    <AppText variant="titleLarge" weight="bold">
+                      Q 3,420
+                    </AppText>
+                  </AppStack>
                 </AppInline>
 
-                <AppInline
-                  gap="sm"
-                  wrap
-                >
-                  <AppChip
-                    tone="primary"
-                    defaultSelected
-                  >
-                    Seleccionado
-                  </AppChip>
+                <AppStack gap="sm">
+                  <AppInline justify="space-between" align="center">
+                    <AppText variant="bodyMedium" tone="secondary">
+                      Meta mensual
+                    </AppText>
 
-                  <AppChip
-                    tone="info"
-                    leadingIcon={
-                      Layers3
-                    }
-                  >
-                    Reutilizable
-                  </AppChip>
-
-                  <AppChip
-                    tone="success"
-                    variant="soft"
-                  >
-                    Semántico
-                  </AppChip>
-                </AppInline>
-
-                <AppSegmentedControl
-                  options={
-                    densityOptions
-                  }
-                  value={density}
-                  onValueChange={
-                    setDensity
-                  }
-                  accessibilityLabel="Densidad de ejemplo"
-                />
-              </AppStack>
-            </AppCard>
-          </AppSection>
-
-          <AppSection
-            gap="lg"
-            header={
-              <AppSectionHeader
-                title="Formularios"
-                description="Inputs controlados preparados para conectarse después a RHF y Zod."
-              />
-            }
-          >
-            <AppCard
-              variant="outlined"
-              padding="lg"
-            >
-              <AppStack gap="xl">
-                <AppInput
-                  label="Nombre"
-                  value={name}
-                  onChangeText={
-                    setName
-                  }
-                  placeholder="Escribe un nombre"
-                  description="Control visual reusable."
-                />
-
-                <AppSearchInput
-                  label="Búsqueda"
-                  value={search}
-                  onValueChange={
-                    setSearch
-                  }
-                  placeholder="Buscar en NOVA"
-                  onSearch={() => {
-                    setToastOpen(true);
-                  }}
-                />
-
-                <AppSwitch
-                  label="Notificaciones"
-                  description="Control booleano reusable."
-                  value={
-                    notifications
-                  }
-                  onValueChange={
-                    setNotifications
-                  }
-                />
-
-                <AppCheckbox
-                  label="Confirmar selección"
-                  description="Estado controlado desde la pantalla."
-                  value={
-                    confirmed
-                  }
-                  onValueChange={
-                    setConfirmed
-                  }
-                />
-              </AppStack>
-            </AppCard>
-          </AppSection>
-
-          <AppSection
-            gap="lg"
-            header={
-              <AppSectionHeader
-                title="Feedback"
-                description="Carga, progreso y estados semánticos."
-              />
-            }
-          >
-            <AppGrid
-              gap="lg"
-              minItemWidth={260}
-            >
-              <AppCard
-                variant="outlined"
-                padding="lg"
-              >
-                <AppStack gap="lg">
-                  <AppText
-                    variant="titleSmall"
-                    weight="semibold"
-                  >
-                    Progreso
-                  </AppText>
+                    <AppText variant="bodyMedium" weight="semibold">
+                      72%
+                    </AppText>
+                  </AppInline>
 
                   <AppProgress
                     value={72}
-                    showValue
                     tone="primary"
-                    accessibilityLabel="Progreso lineal de demostración"
-                  />
-
-                  <AppProgress
-                    value={42}
-                    variant="circular"
-                    showValue
-                    tone="info"
-                    accessibilityLabel="Progreso circular de demostración"
+                    accessibilityLabel="Progreso de meta mensual"
                   />
                 </AppStack>
-              </AppCard>
-
-              <AppCard
-                variant="outlined"
-                padding="lg"
-              >
-                <AppStack gap="md">
-                  <AppText
-                    variant="titleSmall"
-                    weight="semibold"
-                  >
-                    Skeleton
-                  </AppText>
-
-                  <AppSkeleton
-                    variant="rect"
-                    height={88}
-                  />
-
-                  <AppSkeleton
-                    variant="text"
-                    width="80%"
-                  />
-
-                  <AppSkeleton
-                    variant="text"
-                    width="55%"
-                  />
-                </AppStack>
-              </AppCard>
-            </AppGrid>
-
-            <AppAlert
-              tone={
-                confirmed
-                  ? 'success'
-                  : 'warning'
-              }
-              title={
-                confirmed
-                  ? 'Estado confirmado'
-                  : 'Demo en revisión'
-              }
-            >
-              El componente cambia de tono
-              semántico sin recibir códigos de
-              color desde esta pantalla.
-            </AppAlert>
+              </AppStack>
+            </AppCard>
           </AppSection>
 
           <AppSection
             gap="lg"
             header={
               <AppSectionHeader
-                title="Contenido compuesto"
-                description="Bloques que después podremos usar dentro de features reales."
+                title="Actividad"
+                description="Movimientos recientes del sistema."
               />
             }
           >
-            <AppCard
-              variant="outlined"
-              padding="none"
-            >
+            <AppCard variant="outlined" padding="none">
               <AppListItem
-                title="Sistema de diseño"
-                description="Theme, tokens, motion y accesibilidad."
-                metadata="Core"
+                title="Nuevo pedido #1842"
+                description="Pedido registrado por María López."
+                metadata="Ahora"
                 disclosure
                 onPress={() => {
                   setToastOpen(true);
@@ -574,73 +188,137 @@ export default function HomeScreen() {
               />
 
               <AppListItem
-                title="Componentes reutilizables"
-                description="Forms, overlays, feedback, navegación y colecciones."
-                metadata="74"
+                title="Pago recibido"
+                description="Factura #FAC-01834 pagada."
+                metadata="12 min"
+                disclosure
+                onPress={() => {
+                  setToastOpen(true);
+                }}
+              />
+
+              <AppListItem
+                title="Inventario actualizado"
+                description="Se recibieron 24 unidades."
+                metadata="35 min"
                 disclosure
                 onPress={() => {
                   setToastOpen(true);
                 }}
               />
             </AppCard>
+          </AppSection>
 
-            <AppAccordion
-              title="¿Qué demuestra esta página?"
-              description="Una comprobación visual, no una feature de negocio."
-              tone="primary"
-              variant="tonal"
-              defaultExpanded
-            >
-              <AppStack gap="md">
-                <AppText
-                  variant="bodyMedium"
-                  tone="secondary"
-                >
-                  Cuando empecemos auth,
-                  clientes, tickets o e-shop,
-                  reutilizaremos estas mismas
-                  piezas sin volver a resolver
-                  layout, theme y estados desde
-                  cero.
+          <AppGrid gap="lg" minItemWidth={280}>
+            <AppCard variant="tonal" tone="primary" padding="lg">
+              <AppStack gap="lg">
+                <AppInline gap="sm" align="center">
+                  <WalletCards size={20} />
+
+                  <AppText variant="titleMedium" weight="semibold">
+                    Caja
+                  </AppText>
+                </AppInline>
+
+                <AppText variant="headlineSmall" weight="bold">
+                  Q 8,420.00
                 </AppText>
 
-                <AppInline
-                  gap="sm"
-                  wrap
+                <AppText variant="bodyMedium" tone="secondary">
+                  Disponible actualmente.
+                </AppText>
+
+                <AppButton
+                  variant="outlined"
+                  onPress={() => {
+                    setToastOpen(true);
+                  }}
                 >
-                  <AppBadge
-                    tone="success"
-                    variant="soft"
-                  >
-                    Theme
-                  </AppBadge>
-
-                  <AppBadge
-                    tone="info"
-                    variant="soft"
-                  >
-                    Responsive
-                  </AppBadge>
-
-                  <AppBadge
-                    tone="primary"
-                    variant="soft"
-                  >
-                    Accessible
-                  </AppBadge>
-                </AppInline>
+                  Ver movimientos
+                </AppButton>
               </AppStack>
-            </AppAccordion>
+            </AppCard>
+
+            <AppCard variant="outlined" padding="lg">
+              <AppStack gap="lg">
+                <AppInline gap="sm" align="center">
+                  <Bell size={20} />
+
+                  <AppText variant="titleMedium" weight="semibold">
+                    Pendientes
+                  </AppText>
+                </AppInline>
+
+                <AppStack gap="md">
+                  <AppInline justify="space-between">
+                    <AppText tone="secondary">Pedidos</AppText>
+
+                    <AppBadge tone="warning" variant="soft">
+                      12
+                    </AppBadge>
+                  </AppInline>
+
+                  <AppInline justify="space-between">
+                    <AppText tone="secondary">Cobros</AppText>
+
+                    <AppBadge tone="danger" variant="soft">
+                      7
+                    </AppBadge>
+                  </AppInline>
+
+                  <AppInline justify="space-between">
+                    <AppText tone="secondary">Revisiones</AppText>
+
+                    <AppBadge tone="info" variant="soft">
+                      4
+                    </AppBadge>
+                  </AppInline>
+                </AppStack>
+              </AppStack>
+            </AppCard>
+          </AppGrid>
+
+          <AppSection
+            gap="lg"
+            header={
+              <AppSectionHeader
+                title="Estado del sistema"
+                description="Comprobación de infraestructura base."
+              />
+            }
+          >
+            <AppAlert
+              tone={synced ? "success" : "warning"}
+              title={synced ? "Todo funcionando" : "Sincronización pendiente"}
+            >
+              AppSafeArea, viewport, ScrollView y componentes responsive están
+              funcionando dentro del nuevo layout.
+            </AppAlert>
+
+            <AppInline gap="md" wrap>
+              <AppButton leadingIcon={RefreshCw} onPress={handleRefresh}>
+                Actualizar
+              </AppButton>
+
+              <AppButton
+                variant="outlined"
+                tone="neutral"
+                leadingIcon={Activity}
+                onPress={() => {
+                  setSynced((current) => !current);
+                }}
+              >
+                Alternar estado
+              </AppButton>
+            </AppInline>
           </AppSection>
         </AppStack>
       </AppScrollScreen>
 
       <AppToast
         open={toastOpen}
-        onOpenChange={
-          setToastOpen
-        }
-        message="NOVA Design System está respondiendo correctamente."
+        onOpenChange={setToastOpen}
+        message="Acción ejecutada correctamente."
         tone="success"
         position="bottom"
       />
