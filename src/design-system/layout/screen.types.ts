@@ -1,22 +1,16 @@
-import type {
-  StyleProp,
-  ViewStyle,
-} from 'react-native';
-import type { Edge } from 'react-native-safe-area-context';
+import type { StyleProp, ViewStyle } from "react-native";
 
-import type {
-  AppContainerGutter,
-  AppContainerWidth,
-} from './AppContainer';
-import type { SpacingToken } from '../tokens';
+import type { SpacingToken } from "../tokens";
 
-export type ScreenBackground =
-  | 'background'
-  | 'surface'
-  | 'surfaceSecondary';
+import type { AppContainerGutter, AppContainerWidth } from "./AppContainer";
+
+export type AppSafeAreaEdge = "top" | "right" | "bottom" | "left";
+
+export type ScreenBackground = "background" | "surface" | "surfaceSecondary";
 
 export interface AppScreenLayoutProps {
-  safeAreaEdges?: Edge[];
+  safeAreaEdges?: readonly AppSafeAreaEdge[];
+
   background?: ScreenBackground;
 
   contained?: boolean;

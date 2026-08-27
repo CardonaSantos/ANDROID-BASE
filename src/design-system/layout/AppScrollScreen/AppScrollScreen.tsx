@@ -1,21 +1,32 @@
 import { forwardRef, type ComponentRef } from "react";
+
 import { ScrollView, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+
 import { StyleSheet } from "react-native-unistyles";
 
+import { AppSafeArea } from "../_internal/AppSafeArea";
+
 import { AppContainer } from "../AppContainer";
+
 import { DEFAULT_SCREEN_SAFE_AREA_EDGES } from "../screen.constants";
 
 import type { AppScrollScreenProps } from "./AppScrollScreen.types";
 
 /**
- * Standard scrolling screen.
+ * Full-screen scrolling layout.
  *
- * The SafeAreaView owns the full-screen boundary.
- * ScrollView owns scrolling and keeps its platform-native sizing behavior.
+ * Use this for regular screens whose
+ * content can become taller than the
+ * available viewport.
  *
- * Do not force flex/flexGrow through the ScrollView content tree:
- * content height must remain intrinsic so the ScrollView can measure overflow.
+ * AppSafeArea owns the viewport and
+ * system insets. ScrollView owns
+ * scrolling.
+ *
+ * `minHeight: 0` is intentional:
+ * scroll containers need a bounded
+ * flex parent and must be allowed to
+ * shrink below their content size.
  */
 export const AppScrollScreen = forwardRef<
   ComponentRef<typeof ScrollView>,
@@ -40,52 +51,60 @@ export const AppScrollScreen = forwardRef<
     },
     ref,
   ) => (
-    <SafeAreaView
-      edges={safeAreaEdges}
-      style={[styles.root(background), style]}
-    >
+    <AppSafeArea edges={safeAreaEdges} background={background} style={style}>
       <ScrollView
         ref={ref}
         keyboardShouldPersistTaps={keyboardShouldPersistTaps}
         keyboardDismissMode={keyboardDismissMode}
-        style={scrollStyle}
-        contentContainerStyle={[
-          styles.scrollContent(contentPaddingVertical),
-          scrollContentStyle,
-        ]}
+        style={[styles.scroll, scrollStyle]}
+        contentContainerStyle={[styles.scrollContent, scrollContentStyle]}
         {...rest}
       >
         {contained ? (
           <AppContainer
             maxWidth={maxWidth}
             gutter={gutter}
-            style={contentStyle}
+            style={[styles.content(contentPaddingVertical), contentStyle]}
           >
             {children}
           </AppContainer>
         ) : (
-          <View style={[styles.uncontained, contentStyle]}>{children}</View>
+          <View
+            style={[styles.uncontained(contentPaddingVertical), contentStyle]}
+          >
+            {children}
+          </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </AppSafeArea>
   ),
 );
 
 AppScrollScreen.displayName = "AppScrollScreen";
 
 const styles = StyleSheet.create((theme) => ({
-  root: (background: "background" | "surface" | "surfaceSecondary") => ({
+  scroll: {
     flex: 1,
+    minHeight: 0,
     width: "100%",
-    backgroundColor: theme.colors[background],
-  }),
+  },
 
-  scrollContent: (paddingVertical: keyof typeof theme.spacing) => ({
+  scrollContent: {
+    flexGrow: 1,
     width: "100%",
+  },
+
+  content: (paddingVertical: keyof typeof theme.spacing) => ({
+    flexGrow: 1,
+    width: "100%",
+
     paddingVertical: theme.spacing[paddingVertical],
   }),
 
-  uncontained: {
+  uncontained: (paddingVertical: keyof typeof theme.spacing) => ({
+    flexGrow: 1,
     width: "100%",
-  },
+
+    paddingVertical: theme.spacing[paddingVertical],
+  }),
 }));
