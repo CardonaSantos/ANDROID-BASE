@@ -1,46 +1,81 @@
-import { useEffect, useState } from "react";
+import {
+  useStore,
+} from "zustand";
 
-import { useStore } from "zustand";
+import type {
+  AppError,
+} from "@/core/errors";
 
-import { appPreferencesStore } from "./app-preferences.store";
+import {
+  appPreferencesHydrationStore,
+} from "./_internal/app-preferences-hydration.store";
 
-import type { AppThemePreference } from "./app-preferences.types";
+import {
+  appPreferencesStore,
+} from "./app-preferences.store";
 
-export function useThemePreference(): AppThemePreference {
-  return useStore(appPreferencesStore, (state) => state.themePreference);
+import type {
+  AppPreferencesHydrationStatus,
+  AppThemePreference,
+} from "./app-preferences.types";
+
+export function useThemePreference():
+  AppThemePreference {
+  return useStore(
+    appPreferencesStore,
+    (state) =>
+      state.themePreference,
+  );
 }
 
 export function useSetThemePreference() {
-  return useStore(appPreferencesStore, (state) => state.setThemePreference);
+  return useStore(
+    appPreferencesStore,
+    (state) =>
+      state.setThemePreference,
+  );
 }
 
 export function useResetAppPreferences() {
-  return useStore(appPreferencesStore, (state) => state.resetPreferences);
+  return useStore(
+    appPreferencesStore,
+    (state) =>
+      state.resetPreferences,
+  );
 }
 
-export function useHasAppPreferencesHydrated(): boolean {
-  const [hasHydrated, setHasHydrated] = useState(() =>
-    appPreferencesStore.persist.hasHydrated(),
+export function useAppPreferencesHydrationStatus():
+  AppPreferencesHydrationStatus {
+  return useStore(
+    appPreferencesHydrationStore,
+    (state) =>
+      state.status,
   );
+}
 
-  useEffect(() => {
-    const unsubscribeHydrate = appPreferencesStore.persist.onHydrate(() => {
-      setHasHydrated(false);
-    });
+export function useAppPreferencesHydrationError():
+  AppError | null {
+  return useStore(
+    appPreferencesHydrationStore,
+    (state) =>
+      state.error,
+  );
+}
 
-    const unsubscribeFinishHydration =
-      appPreferencesStore.persist.onFinishHydration(() => {
-        setHasHydrated(true);
-      });
+export function useAreAppPreferencesSettled():
+  boolean {
+  const status =
+    useAppPreferencesHydrationStatus();
 
-    setHasHydrated(appPreferencesStore.persist.hasHydrated());
+  return status !==
+    "hydrating";
+}
 
-    return () => {
-      unsubscribeHydrate();
+export function useHasAppPreferencesHydrated():
+  boolean {
+  const status =
+    useAppPreferencesHydrationStatus();
 
-      unsubscribeFinishHydration();
-    };
-  }, []);
-
-  return hasHydrated;
+  return status ===
+    "hydrated";
 }

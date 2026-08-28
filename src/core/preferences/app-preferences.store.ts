@@ -1,10 +1,24 @@
-import { persist } from "zustand/middleware";
+import {
+  persist,
+} from "zustand/middleware";
 
-import { createStore } from "zustand/vanilla";
+import {
+  createStore,
+} from "zustand/vanilla";
 
-import { createPreferencesPersistStorage } from "@/core/storage";
+import {
+  createPreferencesPersistStorage,
+} from "@/core/storage";
 
-import { persistedAppPreferencesSchema } from "./app-preferences.schema";
+import {
+  markAppPreferencesHydrated,
+  markAppPreferencesHydrating,
+  markAppPreferencesHydrationError,
+} from "./_internal/app-preferences-hydration.store";
+
+import {
+  persistedAppPreferencesSchema,
+} from "./app-preferences.schema";
 
 import type {
   AppPreferencesState,
@@ -12,54 +26,99 @@ import type {
   PersistedAppPreferences,
 } from "./app-preferences.types";
 
-const APP_PREFERENCES_STORAGE_KEY = "app.preferences";
+const APP_PREFERENCES_STORAGE_KEY =
+  "app.preferences";
 
-const APP_PREFERENCES_STORAGE_VERSION = 1;
+const APP_PREFERENCES_STORAGE_VERSION =
+  1;
 
-const DEFAULT_APP_PREFERENCES: AppPreferencesState = {
-  themePreference: "system",
-};
+const DEFAULT_APP_PREFERENCES:
+  AppPreferencesState = {
+    themePreference:
+      "system",
+  };
 
-export const appPreferencesStore = createStore<AppPreferencesStore>()(
-  persist<AppPreferencesStore, [], [], PersistedAppPreferences>(
-    (set) => ({
-      ...DEFAULT_APP_PREFERENCES,
+export const appPreferencesStore =
+  createStore<AppPreferencesStore>()(
+    persist<
+      AppPreferencesStore,
+      [],
+      [],
+      PersistedAppPreferences
+    >(
+      (set) => ({
+        ...DEFAULT_APP_PREFERENCES,
 
-      setThemePreference: (themePreference) => {
-        set({
+        setThemePreference: (
           themePreference,
-        });
-      },
+        ) => {
+          set({
+            themePreference,
+          });
+        },
 
-      resetPreferences: () => {
-        set(DEFAULT_APP_PREFERENCES);
-      },
-    }),
-
-    {
-      name: APP_PREFERENCES_STORAGE_KEY,
-
-      version: APP_PREFERENCES_STORAGE_VERSION,
-
-      storage: createPreferencesPersistStorage<PersistedAppPreferences>(),
-
-      partialize: (state): PersistedAppPreferences => ({
-        themePreference: state.themePreference,
+        resetPreferences: () => {
+          set(
+            DEFAULT_APP_PREFERENCES,
+          );
+        },
       }),
 
-      merge: (persistedState, currentState): AppPreferencesStore => {
-        const result = persistedAppPreferencesSchema.safeParse(persistedState);
+      {
+        name:
+          APP_PREFERENCES_STORAGE_KEY,
 
-        if (!result.success) {
-          return currentState;
-        }
+        version:
+          APP_PREFERENCES_STORAGE_VERSION,
 
-        return {
-          ...currentState,
+        storage:
+          createPreferencesPersistStorage<PersistedAppPreferences>(),
 
-          ...result.data,
-        };
+        partialize: (
+          state,
+        ): PersistedAppPreferences => ({
+          themePreference:
+            state.themePreference,
+        }),
+
+        merge: (
+          persistedState,
+          currentState,
+        ): AppPreferencesStore => {
+          const result =
+            persistedAppPreferencesSchema.safeParse(
+              persistedState,
+            );
+
+          if (!result.success) {
+            return currentState;
+          }
+
+          return {
+            ...currentState,
+
+            ...result.data,
+          };
+        },
+
+        onRehydrateStorage: () => {
+          markAppPreferencesHydrating();
+
+          return (
+            _state,
+            error,
+          ) => {
+            if (error) {
+              markAppPreferencesHydrationError(
+                error,
+              );
+
+              return;
+            }
+
+            markAppPreferencesHydrated();
+          };
+        },
       },
-    },
-  ),
-);
+    ),
+  );

@@ -1,6 +1,11 @@
-import { AppError, isAppErrorKind } from "@/core/errors";
+import {
+  AppError,
+  isAppErrorKind,
+} from "@/core/errors";
 
-import { sessionManager } from "@/core/session";
+import {
+  sessionManager,
+} from "@/core/session";
 
 import type {
   AuthSessionCoordinator,
@@ -8,28 +13,43 @@ import type {
   CreateAuthSessionCoordinatorOptions,
 } from "./auth.types";
 
-function createRefreshUnavailableError(): AppError {
+function createRefreshUnavailableError():
+  AppError {
   return new AppError({
     kind: "session",
 
     source: "session",
 
-    code: "AUTH_REFRESH_UNAVAILABLE",
+    code:
+      "AUTH_REFRESH_UNAVAILABLE",
 
-    message: "The current session cannot be refreshed.",
+    message:
+      "The current session cannot be refreshed.",
   });
 }
 
-function isTerminalRefreshFailure(cause: unknown): boolean {
+function isTerminalRefreshFailure(
+  cause: unknown,
+): boolean {
   return (
-    isAppErrorKind(cause, "unauthorized") || isAppErrorKind(cause, "forbidden")
+    isAppErrorKind(
+      cause,
+      "unauthorized",
+    ) ||
+    isAppErrorKind(
+      cause,
+      "forbidden",
+    )
   );
 }
 
 export function createAuthSessionCoordinator(
-  options: CreateAuthSessionCoordinatorOptions,
+  options:
+    CreateAuthSessionCoordinatorOptions,
 ): AuthSessionCoordinator {
-  let refreshPromise: Promise<string> | null = null;
+  let refreshPromise:
+    Promise<string> | null =
+    null;
 
   async function requestNewTokens(
     refreshToken: string,
@@ -39,41 +59,77 @@ export function createAuthSessionCoordinator(
     });
   }
 
-  async function performRefresh(): Promise<string> {
-    const refreshToken = sessionManager.getRefreshToken();
+  async function performRefresh():
+    Promise<string> {
+    const refreshToken =
+      sessionManager.getRefreshToken();
 
     if (!refreshToken) {
+      const snapshot =
+        sessionManager.getSnapshot();
+
+      if (
+        snapshot.status ===
+          "authenticated" ||
+        snapshot.status ===
+          "restoring"
+      ) {
+        await sessionManager.clear();
+      }
+
       throw createRefreshUnavailableError();
     }
 
     try {
-      const tokens = await requestNewTokens(refreshToken);
+      const tokens =
+        await requestNewTokens(
+          refreshToken,
+        );
 
-      const snapshot = sessionManager.getSnapshot();
+      const snapshot =
+        sessionManager.getSnapshot();
 
-      if (snapshot.status === "restoring") {
-        await sessionManager.completeRestore({
-          accessToken: tokens.accessToken,
+      if (
+        snapshot.status ===
+        "restoring"
+      ) {
+        await sessionManager.completeRestore(
+          {
+            accessToken:
+              tokens.accessToken,
 
-          refreshToken: tokens.refreshToken,
-        });
+            refreshToken:
+              tokens.refreshToken,
+          },
+        );
 
         return tokens.accessToken;
       }
 
-      if (snapshot.status === "authenticated") {
-        await sessionManager.updateTokens({
-          accessToken: tokens.accessToken,
+      if (
+        snapshot.status ===
+        "authenticated"
+      ) {
+        await sessionManager.updateTokens(
+          {
+            accessToken:
+              tokens.accessToken,
 
-          refreshToken: tokens.refreshToken,
-        });
+            refreshToken:
+              tokens.refreshToken,
+          },
+        );
 
         return tokens.accessToken;
       }
 
       throw createRefreshUnavailableError();
     } catch (cause) {
-      if (isTerminalRefreshFailure(cause)) {
+      if (
+        isTerminalRefreshFailure(
+          cause,
+        )
+      ) {
         await sessionManager.clear();
       }
 
@@ -81,24 +137,31 @@ export function createAuthSessionCoordinator(
     }
   }
 
-  function refreshSingleFlight(): Promise<string> {
+  function refreshSingleFlight():
+    Promise<string> {
     if (refreshPromise) {
       return refreshPromise;
     }
 
-    const operation = performRefresh();
+    const operation =
+      performRefresh();
 
-    refreshPromise = operation;
+    refreshPromise =
+      operation;
 
     operation.then(
       () => {
-        if (refreshPromise === operation) {
+        if (
+          refreshPromise === operation
+        ) {
           refreshPromise = null;
         }
       },
 
       () => {
-        if (refreshPromise === operation) {
+        if (
+          refreshPromise === operation
+        ) {
           refreshPromise = null;
         }
       },
@@ -107,27 +170,64 @@ export function createAuthSessionCoordinator(
     return operation;
   }
 
-  async function restore(): Promise<void> {
-    const snapshot = sessionManager.getSnapshot();
+  async function restore():
+    Promise<void> {
+    const snapshot =
+      sessionManager.getSnapshot();
 
-    if (snapshot.status !== "restoring") {
+    if (
+      snapshot.status !==
+      "restoring"
+    ) {
       return;
     }
 
-    await refreshSingleFlight();
+    try {
+      await refreshSingleFlight();
+    } catch (cause) {
+      /*
+       * A terminal refresh failure
+       * clears Session intentionally.
+       *
+       * During application restore this
+       * is a valid transition to the
+       * anonymous state, not a fatal
+       * bootstrap failure.
+       */
+      if (
+        sessionManager.getSnapshot()
+          .status === "anonymous"
+      ) {
+        return;
+      }
+
+      /*
+       * Network, timeout, server or
+       * configuration failures preserve
+       * the restoring session so the
+       * application can offer retry.
+       */
+      throw cause;
+    }
   }
 
-  async function refresh(): Promise<string> {
-    const snapshot = sessionManager.getSnapshot();
+  async function refresh():
+    Promise<string> {
+    const snapshot =
+      sessionManager.getSnapshot();
 
-    if (snapshot.status !== "authenticated") {
+    if (
+      snapshot.status !==
+      "authenticated"
+    ) {
       throw createRefreshUnavailableError();
     }
 
     return refreshSingleFlight();
   }
 
-  async function clear(): Promise<void> {
+  async function clear():
+    Promise<void> {
     await sessionManager.clear();
   }
 

@@ -1,115 +1,214 @@
-import { isAppError, toAppError } from "@/core/errors";
+import {
+  authSessionCoordinator,
+} from "@/core/auth";
 
-import { queryRuntime } from "@/core/query";
+import {
+  isAppError,
+  toAppError,
+} from "@/core/errors";
 
-import { realtimeRuntime } from "@/core/realtime";
+import {
+  queryRuntime,
+} from "@/core/query";
 
-import { sessionManager } from "@/core/session";
+import {
+  realtimeRuntime,
+} from "@/core/realtime";
 
-import { appCoreStore, toAppCoreSnapshot } from "./_internal/app-core.store";
+import {
+  sessionManager,
+} from "@/core/session";
 
-import type { AppCoreSnapshot } from "./app-core.types";
+import {
+  appCoreStore,
+  toAppCoreSnapshot,
+} from "./_internal/app-core.store";
 
-let consumers = 0;
+import type {
+  AppCoreSnapshot,
+} from "./app-core.types";
 
-let lifecycleVersion = 0;
+let consumers =
+  0;
 
-let releaseQueryRuntime: (() => void) | null = null;
+let lifecycleVersion =
+  0;
 
-let releaseRealtimeRuntime: (() => void) | null = null;
+let releaseQueryRuntime:
+  (() => void) | null =
+  null;
 
-function getSnapshot(): AppCoreSnapshot {
-  return toAppCoreSnapshot(appCoreStore.getState());
+let releaseRealtimeRuntime:
+  (() => void) | null =
+  null;
+
+function getSnapshot():
+  AppCoreSnapshot {
+  return toAppCoreSnapshot(
+    appCoreStore.getState(),
+  );
 }
 
-function subscribe(listener: (snapshot: AppCoreSnapshot) => void): () => void {
-  return appCoreStore.subscribe((state) => {
-    listener(toAppCoreSnapshot(state));
+function subscribe(
+  listener: (
+    snapshot:
+      AppCoreSnapshot,
+  ) => void,
+): () => void {
+  return appCoreStore.subscribe(
+    (state) => {
+      listener(
+        toAppCoreSnapshot(
+          state,
+        ),
+      );
+    },
+  );
+}
+
+function setBooting():
+  void {
+  appCoreStore.setState({
+    status:
+      "booting",
+
+    error:
+      null,
   });
 }
 
-function setBooting(): void {
+function setReady():
+  void {
   appCoreStore.setState({
-    status: "booting",
+    status:
+      "ready",
 
-    error: null,
+    error:
+      null,
   });
 }
 
-function setReady(): void {
+function setIdle():
+  void {
   appCoreStore.setState({
-    status: "ready",
+    status:
+      "idle",
 
-    error: null,
+    error:
+      null,
   });
 }
 
-function setIdle(): void {
+function setError(
+  error:
+    ReturnType<
+      typeof toAppError
+    >,
+): void {
   appCoreStore.setState({
-    status: "idle",
-
-    error: null,
-  });
-}
-
-function setError(error: ReturnType<typeof toAppError>): void {
-  appCoreStore.setState({
-    status: "error",
+    status:
+      "error",
 
     error,
   });
 }
 
-function teardownRuntimes(): void {
+function teardownRuntimes():
+  void {
   releaseRealtimeRuntime?.();
 
-  releaseRealtimeRuntime = null;
+  releaseRealtimeRuntime =
+    null;
 
   releaseQueryRuntime?.();
 
-  releaseQueryRuntime = null;
+  releaseQueryRuntime =
+    null;
 }
 
-function normalizeBootstrapError(cause: unknown) {
+function normalizeBootstrapError(
+  cause: unknown,
+) {
   if (isAppError(cause)) {
     return cause;
   }
 
-  return toAppError(cause, {
-    kind: "unknown",
+  return toAppError(
+    cause,
+    {
+      kind: "unknown",
 
-    source: "application",
+      source:
+        "application",
 
-    code: "APP_CORE_BOOTSTRAP_FAILED",
+      code:
+        "APP_CORE_BOOTSTRAP_FAILED",
 
-    message: "Unable to initialize application core.",
-  });
+      message:
+        "Unable to initialize application core.",
+    },
+  );
 }
 
-async function bootstrap(version: number): Promise<void> {
+function isCurrentLifecycle(
+  version: number,
+): boolean {
+  return (
+    version ===
+      lifecycleVersion &&
+    consumers > 0
+  );
+}
+
+async function bootstrap(
+  version: number,
+): Promise<void> {
   setBooting();
 
   try {
-    releaseQueryRuntime = queryRuntime.start();
+    releaseQueryRuntime =
+      queryRuntime.start();
 
     await sessionManager.hydrate();
 
     /*
      * The runtime may have been
-     * released while the async
-     * hydration was running.
-     *
-     * This is especially relevant
-     * during React Strict Mode
-     * development cycles.
+     * released while Session was
+     * hydrating.
      */
-    if (version !== lifecycleVersion || consumers === 0) {
+    if (
+      !isCurrentLifecycle(
+        version,
+      )
+    ) {
       return;
     }
 
-    releaseRealtimeRuntime = realtimeRuntime.start();
+    /*
+     * A persisted refresh-token
+     * session is restored before
+     * Realtime starts, so transports
+     * never boot with a stale or
+     * missing access token.
+     */
+    await authSessionCoordinator.restore();
 
-    if (version !== lifecycleVersion || consumers === 0) {
+    if (
+      !isCurrentLifecycle(
+        version,
+      )
+    ) {
+      return;
+    }
+
+    releaseRealtimeRuntime =
+      realtimeRuntime.start();
+
+    if (
+      !isCurrentLifecycle(
+        version,
+      )
+    ) {
       return;
     }
 
@@ -119,37 +218,57 @@ async function bootstrap(version: number): Promise<void> {
      * Ignore failures belonging
      * to an obsolete runtime cycle.
      */
-    if (version !== lifecycleVersion || consumers === 0) {
+    if (
+      !isCurrentLifecycle(
+        version,
+      )
+    ) {
       return;
     }
 
     teardownRuntimes();
 
-    setError(normalizeBootstrapError(cause));
+    setError(
+      normalizeBootstrapError(
+        cause,
+      ),
+    );
   }
 }
 
-function start(): () => void {
-  consumers += 1;
+function start():
+  () => void {
+  consumers +=
+    1;
 
   if (consumers === 1) {
-    lifecycleVersion += 1;
+    lifecycleVersion +=
+      1;
 
-    const version = lifecycleVersion;
+    const version =
+      lifecycleVersion;
 
-    void bootstrap(version);
+    void bootstrap(
+      version,
+    );
   }
 
-  let released = false;
+  let released =
+    false;
 
   return () => {
     if (released) {
       return;
     }
 
-    released = true;
+    released =
+      true;
 
-    consumers = Math.max(0, consumers - 1);
+    consumers =
+      Math.max(
+        0,
+        consumers - 1,
+      );
 
     if (consumers !== 0) {
       return;
@@ -159,7 +278,8 @@ function start(): () => void {
      * Invalidates any async
      * bootstrap still in progress.
      */
-    lifecycleVersion += 1;
+    lifecycleVersion +=
+      1;
 
     teardownRuntimes();
 
@@ -167,30 +287,39 @@ function start(): () => void {
   };
 }
 
-function retry(): void {
+function retry():
+  void {
   if (consumers === 0) {
     return;
   }
 
-  if (appCoreStore.getState().status !== "error") {
+  if (
+    appCoreStore.getState()
+      .status !== "error"
+  ) {
     return;
   }
 
-  lifecycleVersion += 1;
+  lifecycleVersion +=
+    1;
 
   teardownRuntimes();
 
-  const version = lifecycleVersion;
+  const version =
+    lifecycleVersion;
 
-  void bootstrap(version);
+  void bootstrap(
+    version,
+  );
 }
 
-export const appCoreRuntime = Object.freeze({
-  start,
+export const appCoreRuntime =
+  Object.freeze({
+    start,
 
-  retry,
+    retry,
 
-  getSnapshot,
+    getSnapshot,
 
-  subscribe,
-});
+    subscribe,
+  });

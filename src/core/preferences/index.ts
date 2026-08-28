@@ -1,6 +1,11 @@
-export { appPreferencesStore } from "./app-preferences.store";
+export {
+  appPreferencesStore,
+} from "./app-preferences.store";
 
 export {
+  useAppPreferencesHydrationError,
+  useAppPreferencesHydrationStatus,
+  useAreAppPreferencesSettled,
   useHasAppPreferencesHydrated,
   useResetAppPreferences,
   useSetThemePreference,
@@ -9,6 +14,7 @@ export {
 
 export type {
   AppPreferencesActions,
+  AppPreferencesHydrationStatus,
   AppPreferencesState,
   AppPreferencesStore,
   AppThemePreference,
