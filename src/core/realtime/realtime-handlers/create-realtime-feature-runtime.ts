@@ -15,11 +15,14 @@ export function createRealtimeFeatureRuntime(
     0;
 
   let releases:
-    Array<() => void> = [];
+    (() => void)[] =
+    [];
 
-  function attach(): void {
+  function attach():
+    void {
     const attached:
-      Array<() => void> = [];
+      (() => void)[] =
+      [];
 
     try {
       for (
@@ -45,7 +48,8 @@ export function createRealtimeFeatureRuntime(
     }
   }
 
-  function detach(): void {
+  function detach():
+    void {
     for (
       const release of
       releases.reverse()
@@ -92,7 +96,9 @@ export function createRealtimeFeatureRuntime(
           consumers - 1,
         );
 
-      if (consumers === 0) {
+      if (
+        consumers === 0
+      ) {
         detach();
       }
     };

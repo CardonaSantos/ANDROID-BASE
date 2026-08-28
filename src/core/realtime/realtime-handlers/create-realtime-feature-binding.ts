@@ -42,7 +42,10 @@ export function createRealtimeFeatureBinding(
     ...options.handlers,
   ];
 
-  for (const definition of handlers) {
+  for (
+    const definition of
+    handlers
+  ) {
     assertHandlerDefinition(
       definition,
     );
@@ -52,7 +55,8 @@ export function createRealtimeFeatureBinding(
     0;
 
   let releases:
-    Array<() => void> = [];
+    (() => void)[] =
+    [];
 
   function reportError(
     error: unknown,
@@ -77,9 +81,11 @@ export function createRealtimeFeatureBinding(
     }
   }
 
-  function attach(): void {
+  function attach():
+    void {
     const attached:
-      Array<() => void> = [];
+      (() => void)[] =
+      [];
 
     try {
       for (
@@ -97,7 +103,10 @@ export function createRealtimeFeatureBinding(
                   ),
                 )
                 .catch(
-                  (error: unknown) => {
+                  (
+                    error:
+                      unknown,
+                  ) => {
                     reportError(
                       error,
                       event,
@@ -126,7 +135,8 @@ export function createRealtimeFeatureBinding(
     }
   }
 
-  function detach(): void {
+  function detach():
+    void {
     for (
       const release of
       releases.reverse()
@@ -173,7 +183,9 @@ export function createRealtimeFeatureBinding(
           consumers - 1,
         );
 
-      if (consumers === 0) {
+      if (
+        consumers === 0
+      ) {
         detach();
       }
     };

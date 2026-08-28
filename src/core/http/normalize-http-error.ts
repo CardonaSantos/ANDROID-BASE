@@ -1,6 +1,12 @@
-import axios from "axios";
+import {
+  isAxiosError,
+} from "axios";
 
-import { AppError, isAppError, toAppError } from "@/core/errors";
+import {
+  AppError,
+  isAppError,
+  toAppError,
+} from "@/core/errors";
 
 import {
   getDefaultHttpMessage,
@@ -11,90 +17,156 @@ import {
   shouldUseServerMessage,
 } from "./http-error.utils";
 
-export function normalizeHttpError(error: unknown): AppError {
+export function normalizeHttpError(
+  error: unknown,
+): AppError {
   if (isAppError(error)) {
     return error;
   }
 
-  if (!axios.isAxiosError(error)) {
-    return toAppError(error, {
-      kind: "unknown",
+  if (!isAxiosError(error)) {
+    return toAppError(
+      error,
+      {
+        kind:
+          "unknown",
 
-      source: "http",
+        source:
+          "http",
 
-      message: "Unexpected HTTP error.",
-    });
+        message:
+          "Unexpected HTTP error.",
+      },
+    );
   }
 
-  if (error.code === "ERR_CANCELED") {
+  if (
+    error.code ===
+    "ERR_CANCELED"
+  ) {
     return new AppError({
-      kind: "cancelled",
+      kind:
+        "cancelled",
 
-      source: "http",
+      source:
+        "http",
 
-      code: "HTTP_REQUEST_CANCELLED",
+      code:
+        "HTTP_REQUEST_CANCELLED",
 
-      message: getDefaultHttpMessage("cancelled"),
+      message:
+        getDefaultHttpMessage(
+          "cancelled",
+        ),
 
-      cause: error,
-    });
-  }
-
-  if (error.code === "ETIMEDOUT" || error.code === "ECONNABORTED") {
-    return new AppError({
-      kind: "timeout",
-
-      source: "http",
-
-      code: "HTTP_REQUEST_TIMEOUT",
-
-      message: getDefaultHttpMessage("timeout"),
-
-      cause: error,
+      cause:
+        error,
     });
   }
 
   if (
-    error.code === "ERR_NETWORK" ||
-    error.code === "ECONNREFUSED" ||
-    (!error.response && error.request)
+    error.code ===
+      "ETIMEDOUT" ||
+    error.code ===
+      "ECONNABORTED"
   ) {
     return new AppError({
-      kind: "network",
+      kind:
+        "timeout",
 
-      source: "http",
+      source:
+        "http",
 
-      code: "HTTP_NETWORK_ERROR",
+      code:
+        "HTTP_REQUEST_TIMEOUT",
 
-      message: getDefaultHttpMessage("network"),
+      message:
+        getDefaultHttpMessage(
+          "timeout",
+        ),
 
-      cause: error,
+      cause:
+        error,
     });
   }
 
-  const status = error.response?.status;
+  if (
+    error.code ===
+      "ERR_NETWORK" ||
+    error.code ===
+      "ECONNREFUSED" ||
+    (
+      !error.response &&
+      error.request
+    )
+  ) {
+    return new AppError({
+      kind:
+        "network",
 
-  if (typeof status === "number") {
-    const kind = getHttpErrorKind(status);
+      source:
+        "http",
 
-    const parsed = parseHttpErrorBody(error.response?.data);
+      code:
+        "HTTP_NETWORK_ERROR",
+
+      message:
+        getDefaultHttpMessage(
+          "network",
+        ),
+
+      cause:
+        error,
+    });
+  }
+
+  const status =
+    error.response?.status;
+
+  if (
+    typeof status ===
+    "number"
+  ) {
+    const kind =
+      getHttpErrorKind(
+        status,
+      );
+
+    const parsed =
+      parseHttpErrorBody(
+        error.response?.data,
+      );
 
     const message =
-      shouldUseServerMessage(status) && parsed.message
+      shouldUseServerMessage(
+        status,
+      ) &&
+      parsed.message
         ? parsed.message
-        : getDefaultHttpMessage(kind);
+        : getDefaultHttpMessage(
+            kind,
+          );
 
     const code =
-      shouldUseServerCode(status) && parsed.code
+      shouldUseServerCode(
+        status,
+      ) &&
+      parsed.code
         ? parsed.code
         : `HTTP_${status}`;
 
-    const details = shouldUseServerDetails(status) ? parsed.details : undefined;
+    const details =
+      shouldUseServerDetails(
+        status,
+      )
+        ? parsed.details
+        : undefined;
 
     return new AppError({
       kind,
 
-      source: "http",
+      source:
+        "http",
 
       status,
 
@@ -104,19 +176,26 @@ export function normalizeHttpError(error: unknown): AppError {
 
       details,
 
-      cause: error,
+      cause:
+        error,
     });
   }
 
   return new AppError({
-    kind: "unknown",
+    kind:
+      "unknown",
 
-    source: "http",
+    source:
+      "http",
 
-    code: error.code ?? "HTTP_UNKNOWN_ERROR",
+    code:
+      error.code ??
+      "HTTP_UNKNOWN_ERROR",
 
-    message: "Unexpected HTTP error.",
+    message:
+      "Unexpected HTTP error.",
 
-    cause: error,
+    cause:
+      error,
   });
 }

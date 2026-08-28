@@ -12,9 +12,7 @@ import { StatusBar } from "expo-status-bar";
 
 import { useUnistyles } from "react-native-unistyles";
 
-// import {
-//   AppApplicationRuntime,
-// } from "@/application";
+import { AppApplicationRuntime } from "@/application";
 
 import {
   AppCoreProvider,
@@ -29,7 +27,6 @@ import {
   useThemePreference,
 } from "@/core/preferences";
 
-import { AppApplicationRuntime } from "@/core/application";
 import {
   AppConnectivityBanner,
   AppDesignSystemProvider,
