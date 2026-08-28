@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import { AppError } from "@/core/errors";
+import { AppError, isAppErrorKind } from "@/core/errors";
 
 import { normalizeHttpError } from "./normalize-http-error";
 
@@ -93,7 +93,7 @@ function buildHeaders(
 }
 
 export function createHttpClient(options: CreateHttpClientOptions): HttpClient {
-  const { baseUrl, timeoutMs, tokenProvider } = options;
+  const { baseUrl, timeoutMs, tokenProvider, onUnauthorized } = options;
 
   const axiosClient = axios.create({
     baseURL: baseUrl,
@@ -127,32 +127,82 @@ export function createHttpClient(options: CreateHttpClientOptions): HttpClient {
 
       const authMode = request.auth ?? "auto";
 
+      async function execute(accessToken: string | null): Promise<TData> {
+        const response = await axiosClient.request<TData>({
+          url: path,
+
+          method: request.method,
+
+          data: request.body,
+
+          params: request.params,
+
+          headers: buildHeaders(
+            request.headers,
+            accessToken,
+            authMode === "auto",
+          ),
+
+          signal: request.signal,
+
+          timeout: request.timeoutMs,
+
+          responseType: request.responseType,
+        });
+
+        return response.data;
+      }
+
       const accessToken =
         authMode === "auto" ? (tokenProvider?.getAccessToken() ?? null) : null;
 
-      const response = await axiosClient.request<TData>({
-        url: path,
+      try {
+        return await execute(accessToken);
+      } catch (cause) {
+        /*
+         * Public/auth-none requests
+         * must never trigger session
+         * recovery.
+         */
+        if (authMode !== "auto") {
+          throw cause;
+        }
 
-        method: request.method,
+        /*
+         * Only an actual HTTP 401
+         * can trigger access-token
+         * recovery.
+         */
+        if (!isAppErrorKind(cause, "unauthorized")) {
+          throw cause;
+        }
 
-        data: request.body,
+        /*
+         * Some applications may not
+         * configure refresh-token
+         * authentication.
+         */
+        if (!onUnauthorized) {
+          throw cause;
+        }
 
-        params: request.params,
+        /*
+         * The supplied handler owns
+         * refresh single-flight and
+         * session token rotation.
+         */
+        const refreshedAccessToken = await onUnauthorized();
 
-        headers: buildHeaders(
-          request.headers,
-          accessToken,
-          authMode === "auto",
-        ),
-
-        signal: request.signal,
-
-        timeout: request.timeoutMs,
-
-        responseType: request.responseType,
-      });
-
-      return response.data;
+        /*
+         * Exactly one retry.
+         *
+         * Any failure from this second
+         * request propagates directly;
+         * another 401 cannot recursively
+         * trigger another refresh.
+         */
+        return execute(refreshedAccessToken);
+      }
     },
   });
 }

@@ -32,10 +32,14 @@ export interface HttpClient {
   ): Promise<TData>;
 }
 
+export type HttpUnauthorizedHandler = () => Promise<string>;
+
 export interface CreateHttpClientOptions {
   baseUrl: string;
 
   timeoutMs: number;
 
   tokenProvider?: AccessTokenProvider;
+
+  onUnauthorized?: HttpUnauthorizedHandler;
 }

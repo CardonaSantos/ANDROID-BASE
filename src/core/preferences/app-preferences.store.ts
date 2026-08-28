@@ -12,7 +12,7 @@ import type {
   PersistedAppPreferences,
 } from "./app-preferences.types";
 
-const APP_PREFERENCES_STORAGE_KEY = "app.preferences.v1";
+const APP_PREFERENCES_STORAGE_KEY = "app.preferences";
 
 const APP_PREFERENCES_STORAGE_VERSION = 1;
 

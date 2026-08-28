@@ -1,3 +1,5 @@
+import { authSessionCoordinator } from "@/core/auth";
+
 import { appConfig } from "@/core/config";
 
 import { sessionTokenProvider } from "@/core/session";
@@ -10,4 +12,6 @@ export const httpClient = createHttpClient({
   timeoutMs: appConfig.api.timeoutMs,
 
   tokenProvider: sessionTokenProvider,
+
+  onUnauthorized: () => authSessionCoordinator.refresh(),
 });

@@ -11,4 +11,5 @@ export type {
   HttpMethod,
   HttpRequest,
   HttpResponseType,
+  HttpUnauthorizedHandler,
 } from "./http.types";
