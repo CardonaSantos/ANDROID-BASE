@@ -5,6 +5,7 @@ import {
 
 import {
   sessionManager,
+  sessionTokenProvider,
 } from "@/core/session";
 
 import type {
@@ -28,6 +29,21 @@ function createRefreshUnavailableError():
   });
 }
 
+function createSessionChangedDuringRefreshError():
+  AppError {
+  return new AppError({
+    kind: "session",
+
+    source: "session",
+
+    code:
+      "AUTH_SESSION_CHANGED_DURING_REFRESH",
+
+    message:
+      "The session changed while authentication was being refreshed.",
+  });
+}
+
 function isTerminalRefreshFailure(
   cause: unknown,
 ): boolean {
@@ -40,6 +56,47 @@ function isTerminalRefreshFailure(
       cause,
       "forbidden",
     )
+  );
+}
+
+function captureRefreshContext(
+  refreshToken: string,
+) {
+  const snapshot =
+    sessionManager.getSnapshot();
+
+  return {
+    status:
+      snapshot.status,
+
+    persistenceStrategy:
+      snapshot.persistenceStrategy,
+
+    accessToken:
+      sessionTokenProvider.getAccessToken(),
+
+    refreshToken,
+  };
+}
+
+function isSameRefreshContext(
+  context:
+    ReturnType<
+      typeof captureRefreshContext
+    >,
+): boolean {
+  const snapshot =
+    sessionManager.getSnapshot();
+
+  return (
+    snapshot.status ===
+      context.status &&
+    snapshot.persistenceStrategy ===
+      context.persistenceStrategy &&
+    sessionTokenProvider.getAccessToken() ===
+      context.accessToken &&
+    sessionManager.getRefreshToken() ===
+      context.refreshToken
   );
 }
 
@@ -80,11 +137,31 @@ export function createAuthSessionCoordinator(
       throw createRefreshUnavailableError();
     }
 
+    const refreshContext =
+      captureRefreshContext(
+        refreshToken,
+      );
+
     try {
       const tokens =
         await requestNewTokens(
           refreshToken,
         );
+
+      /*
+       * Never apply credentials obtained
+       * for an older session to a newer
+       * login/session that became active
+       * while the refresh request was in
+       * flight.
+       */
+      if (
+        !isSameRefreshContext(
+          refreshContext,
+        )
+      ) {
+        throw createSessionChangedDuringRefreshError();
+      }
 
       const snapshot =
         sessionManager.getSnapshot();
@@ -125,9 +202,20 @@ export function createAuthSessionCoordinator(
 
       throw createRefreshUnavailableError();
     } catch (cause) {
+      /*
+       * A rejected OLD refresh must never
+       * log out a NEW session.
+       *
+       * Clear only when the credentials
+       * that started this refresh still
+       * represent the active session.
+       */
       if (
         isTerminalRefreshFailure(
           cause,
+        ) &&
+        isSameRefreshContext(
+          refreshContext,
         )
       ) {
         await sessionManager.clear();
@@ -186,13 +274,12 @@ export function createAuthSessionCoordinator(
       await refreshSingleFlight();
     } catch (cause) {
       /*
-       * A terminal refresh failure
-       * clears Session intentionally.
+       * A terminal refresh failure clears
+       * Session intentionally.
        *
-       * During application restore this
-       * is a valid transition to the
-       * anonymous state, not a fatal
-       * bootstrap failure.
+       * During restore, becoming anonymous
+       * is a valid result rather than a
+       * fatal application bootstrap error.
        */
       if (
         sessionManager.getSnapshot()
@@ -201,12 +288,6 @@ export function createAuthSessionCoordinator(
         return;
       }
 
-      /*
-       * Network, timeout, server or
-       * configuration failures preserve
-       * the restoring session so the
-       * application can offer retry.
-       */
       throw cause;
     }
   }

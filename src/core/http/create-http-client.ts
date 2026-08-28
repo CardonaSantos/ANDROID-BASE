@@ -238,29 +238,87 @@ export function createHttpClient(
         );
       } catch (cause) {
         if (
-          authMode !== "auto"
-        ) {
-          throw cause;
-        }
-
-        if (
+          authMode !== "auto" ||
           !isAppErrorKind(
             cause,
             "unauthorized",
-          )
+          ) ||
+          !onUnauthorized
         ) {
           throw cause;
         }
 
-        if (!onUnauthorized) {
+        /*
+         * A request that did not actually
+         * send an access token must not
+         * start an authentication refresh.
+         */
+        if (!accessToken) {
           throw cause;
+        }
+
+        const currentAccessToken =
+          tokenProvider
+            ?.getAccessToken() ??
+          null;
+
+        /*
+         * The user may have logged out
+         * while the failed request was in
+         * flight. Do not resurrect/recover
+         * a session that no longer exists.
+         */
+        if (!currentAccessToken) {
+          throw cause;
+        }
+
+        /*
+         * Another request may already have
+         * refreshed Session before this
+         * late 401 arrived.
+         *
+         * Retry once with the CURRENT token
+         * instead of performing a second
+         * unnecessary refresh.
+         */
+        if (
+          currentAccessToken !==
+          accessToken
+        ) {
+          return execute(
+            currentAccessToken,
+          );
         }
 
         const refreshedAccessToken =
           await onUnauthorized();
 
+        /*
+         * onUnauthorized may have completed
+         * while Session changed again.
+         *
+         * When a token provider exists, the
+         * provider remains the source of
+         * truth for the retry.
+         */
+        const retryAccessToken =
+          tokenProvider
+            ? tokenProvider.getAccessToken()
+            : refreshedAccessToken;
+
+        if (!retryAccessToken) {
+          throw cause;
+        }
+
+        /*
+         * Exactly one retry.
+         *
+         * Any failure here propagates
+         * directly and cannot recurse into
+         * another refresh attempt.
+         */
         return execute(
-          refreshedAccessToken,
+          retryAccessToken,
         );
       }
     },
