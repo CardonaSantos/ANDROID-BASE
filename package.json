@@ -77,7 +77,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:core": "jest tests/core",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:tracking": "jest tests/features/tracking --runInBand",
+    "test:dashboard": "jest tests/features/dashboard --runInBand"
   },
   "private": true
 }

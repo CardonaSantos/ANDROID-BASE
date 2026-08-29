@@ -226,3 +226,15 @@ export async function stopTrackingLocationService(): Promise<void> {
 
   await Location.stopLocationUpdatesAsync(TRACKING_LOCATION_TASK_NAME);
 }
+
+export async function reconfigureTrackingLocationService(
+  profileId: TrackingProfileId,
+): Promise<StartTrackingServiceResult> {
+  const running = await isTrackingLocationServiceRunning();
+
+  if (running) {
+    await stopTrackingLocationService();
+  }
+
+  return startTrackingLocationService(profileId);
+}

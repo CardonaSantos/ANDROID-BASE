@@ -7,6 +7,7 @@ import {
   getTrackingDeviceStatus,
   grantTrackingBackgroundPermission,
   grantTrackingForegroundPermission,
+  reconcileTrackingRuntime,
 } from "../application";
 
 import type { TrackingProfileId } from "../background";
@@ -20,6 +21,26 @@ async function refreshTrackingDeviceStatus() {
   await queryClient.invalidateQueries({
     queryKey: trackingDeviceStatusQueryKey,
   });
+}
+
+async function reconcileAfterPermission(granted: boolean): Promise<void> {
+  await refreshTrackingDeviceStatus();
+
+  if (!granted) {
+    return;
+  }
+
+  try {
+    await reconcileTrackingRuntime();
+  } catch {
+    /*
+     * Puede no existir jornada todavía.
+     * Conceder permisos sigue siendo una
+     * operación válida por sí misma.
+     */
+  }
+
+  await refreshTrackingDeviceStatus();
 }
 
 export function useTrackingDeviceStatusQuery() {
@@ -36,7 +57,9 @@ export function useGrantTrackingForegroundPermissionMutation() {
 
     mutationFn: grantTrackingForegroundPermission,
 
-    onSettled: refreshTrackingDeviceStatus,
+    onSuccess: reconcileAfterPermission,
+
+    onError: refreshTrackingDeviceStatus,
   });
 }
 
@@ -46,10 +69,19 @@ export function useGrantTrackingBackgroundPermissionMutation() {
 
     mutationFn: grantTrackingBackgroundPermission,
 
-    onSettled: refreshTrackingDeviceStatus,
+    onSuccess: reconcileAfterPermission,
+
+    onError: refreshTrackingDeviceStatus,
   });
 }
 
+/*
+ * Se conserva temporalmente para
+ * compatibilidad/tests.
+ *
+ * La UI final ya no debe mostrar
+ * un botón manual de activación.
+ */
 export function useActivateTrackingDeviceMutation() {
   return useMutation({
     mutationKey: ["tracking", "device", "activate"],

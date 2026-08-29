@@ -19,12 +19,10 @@ import { dashboardModules } from "../dashboard.modules";
 
 import { DashboardModuleCard } from "./DashboardModuleCard";
 
+import { TechnicianDashboardScreen } from "./TechnicianDashboardScreen";
+
 export function DashboardScreen() {
-  const router = useRouter();
-
   const currentUserQuery = useCurrentUserQuery();
-
-  const logoutMutation = useLogoutMutation();
 
   if (currentUserQuery.isPending) {
     return (
@@ -46,8 +44,22 @@ export function DashboardScreen() {
 
   const user = currentUserQuery.data;
 
+  const isTechnician = user.roles.includes("TECNICO");
+
+  if (isTechnician) {
+    return <TechnicianDashboardScreen />;
+  }
+
+  return <GenericDashboardScreen roles={user.roles} />;
+}
+
+function GenericDashboardScreen({ roles }: { roles: readonly string[] }) {
+  const router = useRouter();
+
+  const logoutMutation = useLogoutMutation();
+
   const availableModules = dashboardModules.filter((module) =>
-    module.roles.some((role) => user.roles.includes(role)),
+    module.roles.some((role) => roles.includes(role)),
   );
 
   return (
@@ -58,7 +70,7 @@ export function DashboardScreen() {
             Panel de trabajo
           </AppText>
 
-          <AppText tone="muted">Rol: {user.roles.join(", ")}</AppText>
+          <AppText tone="muted">Rol: {roles.join(", ")}</AppText>
         </AppStack>
 
         <AppStack gap="lg">

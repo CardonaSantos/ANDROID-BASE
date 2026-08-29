@@ -11,6 +11,7 @@ export { TRACKING_LOCATION_TASK_NAME } from "./tracking-task.constants";
 export {
   getTrackingServiceAvailability,
   isTrackingLocationServiceRunning,
+  reconfigureTrackingLocationService,
   requestTrackingBackgroundPermission,
   requestTrackingForegroundPermission,
   startTrackingLocationService,

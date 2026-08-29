@@ -1,20 +1,19 @@
-import {
-  useEffect,
-  type PropsWithChildren,
-} from "react";
+import { useEffect, type PropsWithChildren } from "react";
 
-import {
-  appRealtimeFeatureRuntime,
-} from "./realtime/app-realtime-feature.runtime";
+import { appRealtimeFeatureRuntime } from "./realtime/app-realtime-feature.runtime";
 
-export function AppApplicationRuntime({
-  children,
-}: PropsWithChildren) {
+import { appTrackingFeatureRuntime } from "./tracking/app-tracking-feature.runtime";
+
+export function AppApplicationRuntime({ children }: PropsWithChildren) {
   useEffect(() => {
-    const release =
-      appRealtimeFeatureRuntime.start();
+    const releaseRealtime = appRealtimeFeatureRuntime.start();
 
-    return release;
+    const releaseTracking = appTrackingFeatureRuntime.start();
+
+    return () => {
+      releaseTracking();
+      releaseRealtime();
+    };
   }, []);
 
   return <>{children}</>;

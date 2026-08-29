@@ -1,5 +1,4 @@
 import {
-  BatteryMedium,
   CheckCircle2,
   MapPin,
   ShieldAlert,
@@ -15,14 +14,18 @@ import {
   AppText,
 } from "@/design-system";
 
-import { DEFAULT_TRACKING_PROFILE_ID } from "../background";
+import { DEFAULT_TRACKING_PROFILE_ID, getTrackingProfile } from "../background";
 
 import {
-  useActivateTrackingDeviceMutation,
   useGrantTrackingBackgroundPermissionMutation,
   useGrantTrackingForegroundPermissionMutation,
   useTrackingDeviceStatusQuery,
+  useTrackingProfileQuery,
 } from "../hooks";
+
+interface TrackingDeviceCardProps {
+  journeyActive: boolean;
+}
 
 interface StatusRowProps {
   label: string;
@@ -44,14 +47,14 @@ function StatusRow({ label, value, ok }: StatusRowProps) {
   );
 }
 
-export function TrackingDeviceCard() {
+export function TrackingDeviceCard({ journeyActive }: TrackingDeviceCardProps) {
   const statusQuery = useTrackingDeviceStatusQuery();
+
+  const profileQuery = useTrackingProfileQuery();
 
   const foregroundMutation = useGrantTrackingForegroundPermissionMutation();
 
   const backgroundMutation = useGrantTrackingBackgroundPermissionMutation();
-
-  const activateMutation = useActivateTrackingDeviceMutation();
 
   if (statusQuery.isPending) {
     return (
@@ -87,6 +90,10 @@ export function TrackingDeviceCard() {
   const ready =
     status.locationServicesEnabled && foregroundGranted && backgroundGranted;
 
+  const profileId = profileQuery.data ?? DEFAULT_TRACKING_PROFILE_ID;
+
+  const profile = getTrackingProfile(profileId);
+
   return (
     <AppCard>
       <AppStack gap="xl">
@@ -103,7 +110,8 @@ export function TrackingDeviceCard() {
           </AppText>
 
           <AppText tone="muted">
-            Estado del servicio de ubicación utilizado durante la jornada.
+            El servicio de ubicación se administra automáticamente según el
+            estado de tu jornada.
           </AppText>
         </AppStack>
 
@@ -129,12 +137,22 @@ export function TrackingDeviceCard() {
           <StatusRow
             label="Servicio de seguimiento"
             value={
-              status.serviceRunning ? "Activo en segundo plano" : "Detenido"
+              status.serviceRunning
+                ? "Activo en segundo plano"
+                : journeyActive
+                  ? "Pendiente de activación automática"
+                  : "En espera de jornada"
             }
-            ok={status.serviceRunning}
+            ok={status.serviceRunning || !journeyActive}
           />
 
-          <StatusRow label="Perfil" value="Normal · 5 min / 250 m" ok />
+          <StatusRow
+            label="Perfil"
+            value={`${profile.label} · ${
+              profile.maxSendIntervalMs / 60_000
+            } min / ${profile.movementThresholdMeters} m`}
+            ok
+          />
         </AppStack>
 
         {!foregroundGranted ? (
@@ -160,9 +178,8 @@ export function TrackingDeviceCard() {
         {foregroundGranted && !backgroundGranted ? (
           <AppStack gap="md">
             <AppAlert tone="warning" title="Ubicación en segundo plano">
-              Para mantener el seguimiento cuando uses otra aplicación o
-              bloquees la pantalla, Android necesita permitir ubicación en
-              segundo plano.
+              Para mantener el seguimiento al bloquear la pantalla o usar otra
+              aplicación, Android necesita este permiso.
             </AppAlert>
 
             <AppButton
@@ -178,23 +195,22 @@ export function TrackingDeviceCard() {
           </AppStack>
         ) : null}
 
-        {ready && !status.serviceRunning ? (
-          <AppButton
-            fullWidth
-            size="lg"
-            leadingIcon={BatteryMedium}
-            loading={activateMutation.isPending}
-            onPress={() => {
-              activateMutation.mutate(DEFAULT_TRACKING_PROFILE_ID);
-            }}
-          >
-            Activar seguimiento
-          </AppButton>
+        {ready && journeyActive && status.serviceRunning ? (
+          <AppAlert tone="success" title="Seguimiento activo">
+            La jornada está registrando ubicación en segundo plano.
+          </AppAlert>
         ) : null}
 
-        {status.serviceRunning ? (
-          <AppAlert tone="success" title="Seguimiento activo">
-            El servicio de ubicación está ejecutándose en segundo plano.
+        {ready && !journeyActive ? (
+          <AppAlert tone="neutral" title="Dispositivo preparado">
+            El seguimiento se iniciará automáticamente al comenzar la jornada.
+          </AppAlert>
+        ) : null}
+
+        {ready && journeyActive && !status.serviceRunning ? (
+          <AppAlert tone="info" title="Preparando seguimiento">
+            La jornada está activa. El servicio de ubicación se recuperará
+            automáticamente.
           </AppAlert>
         ) : null}
       </AppStack>

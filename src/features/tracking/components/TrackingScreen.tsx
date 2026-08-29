@@ -1,4 +1,6 @@
-import { Clock, MapPin, Play } from "lucide-react-native";
+import { useState } from "react";
+
+import { Clock, MapPin, Play, Square } from "lucide-react-native";
 
 import { isAppError } from "@/core/errors";
 
@@ -6,14 +8,23 @@ import {
   AppAlert,
   AppButton,
   AppCard,
+  AppConfirmDialog,
   AppIcon,
   AppScrollScreen,
   AppStack,
   AppText,
 } from "@/design-system";
-import { TrackingDeviceCard } from "./TrackingDeviceCard";
 
-import { useStartTrackingMutation, useTrackingStateQuery } from "../hooks";
+import { TrackingDeviceCard } from "./TrackingDeviceCard";
+import { TrackingFinishedSummaryCard } from "./TrackingFinishedSummaryCard";
+import { TrackingProfileCard } from "./TrackingProfileCard";
+
+import {
+  useFinishTrackingMutation,
+  useStartTrackingMutation,
+  useTrackingStateQuery,
+} from "../hooks";
+import { TrackingSyncCard } from "./TrackingSyncCard";
 
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -31,7 +42,7 @@ function formatDate(value: string): string {
 
 function getTrackingErrorMessage(error: unknown): string {
   if (!isAppError(error)) {
-    return "No se pudo consultar el estado del seguimiento.";
+    return "No fue posible completar la operación de seguimiento.";
   }
 
   switch (error.kind) {
@@ -48,14 +59,24 @@ function getTrackingErrorMessage(error: unknown): string {
       return "No tienes autorización para utilizar esta función.";
 
     default:
-      return "No se pudo consultar el estado del seguimiento.";
+      return "No fue posible completar la operación de seguimiento.";
   }
 }
 
 export function TrackingScreen() {
+  const [finishDialogOpen, setFinishDialogOpen] = useState(false);
+
   const trackingQuery = useTrackingStateQuery();
 
   const startMutation = useStartTrackingMutation();
+
+  const finishMutation = useFinishTrackingMutation();
+
+  /*
+   * =====================================================
+   * CARGANDO ESTADO DE JORNADA
+   * =====================================================
+   */
 
   if (trackingQuery.isPending) {
     return (
@@ -70,6 +91,12 @@ export function TrackingScreen() {
       </AppScrollScreen>
     );
   }
+
+  /*
+   * =====================================================
+   * ERROR CONSULTANDO JORNADA
+   * =====================================================
+   */
 
   if (trackingQuery.isError) {
     return (
@@ -101,6 +128,12 @@ export function TrackingScreen() {
   return (
     <AppScrollScreen>
       <AppStack gap="2xl">
+        {/*
+         * =================================================
+         * ENCABEZADO
+         * =================================================
+         */}
+
         <AppStack gap="xs">
           <AppText variant="headlineSmall" weight="semibold">
             Seguimiento GPS
@@ -109,11 +142,23 @@ export function TrackingScreen() {
           <AppText tone="muted">Control de jornada y ubicación.</AppText>
         </AppStack>
 
+        {/*
+         * =================================================
+         * JORNADA ACTIVA
+         * =================================================
+         */}
+
         {tracking.activo ? (
           <>
             <AppAlert tone="success" title="Jornada activa">
               La sesión de seguimiento se encuentra activa.
             </AppAlert>
+
+            {/*
+             * ---------------------------------------------
+             * RESUMEN DE SESIÓN
+             * ---------------------------------------------
+             */}
 
             <AppCard>
               <AppStack gap="lg">
@@ -153,13 +198,134 @@ export function TrackingScreen() {
               </AppStack>
             </AppCard>
 
-            <TrackingDeviceCard />
+            {/*
+             * ---------------------------------------------
+             * PERFIL GPS
+             * ---------------------------------------------
+             *
+             * Puede cambiarse durante una jornada.
+             * Cambiarlo NO modifica sesionTrackingId
+             * ni finaliza la asistencia.
+             */}
+
+            <TrackingProfileCard journeyActive />
+
+            {/*
+             * ---------------------------------------------
+             * ESTADO NATIVO DEL DISPOSITIVO
+             * ---------------------------------------------
+             */}
+
+            <TrackingDeviceCard journeyActive />
+
+            <TrackingSyncCard sessionId={tracking.sesionTrackingId} />
+
+            {/*
+             * ---------------------------------------------
+             * ERROR DE FINALIZACIÓN
+             * ---------------------------------------------
+             */}
+
+            {finishMutation.isError ? (
+              <AppAlert tone="danger" title="No se pudo finalizar la jornada">
+                {getTrackingErrorMessage(finishMutation.error)}
+              </AppAlert>
+            ) : null}
+
+            {/*
+             * ---------------------------------------------
+             * FINALIZAR JORNADA
+             * ---------------------------------------------
+             */}
+
+            <AppButton
+              fullWidth
+              size="lg"
+              tone="danger"
+              variant="outlined"
+              leadingIcon={Square}
+              onPress={() => {
+                setFinishDialogOpen(true);
+              }}
+            >
+              Finalizar jornada
+            </AppButton>
+
+            {/*
+             * ---------------------------------------------
+             * CONFIRMACIÓN
+             * ---------------------------------------------
+             */}
+
+            <AppConfirmDialog
+              open={finishDialogOpen}
+              onOpenChange={setFinishDialogOpen}
+              title="Finalizar jornada"
+              description="Se registrará tu hora de salida y se detendrá el seguimiento GPS."
+              tone="danger"
+              confirmTone="danger"
+              confirmLabel="Finalizar jornada"
+              cancelLabel="Cancelar"
+              dismissable
+              onConfirm={async () => {
+                await finishMutation.mutateAsync(tracking.sesionTrackingId);
+              }}
+            >
+              <AppAlert tone="warning" title="El seguimiento se detendrá">
+                Una vez finalizada la jornada, el dispositivo dejará de
+                registrar nuevas ubicaciones.
+              </AppAlert>
+            </AppConfirmDialog>
           </>
         ) : (
+          /*
+           * =================================================
+           * SIN JORNADA ACTIVA
+           * =================================================
+           */
+
           <>
+            {/*
+             * ---------------------------------------------
+             * ÚLTIMA JORNADA FINALIZADA
+             * ---------------------------------------------
+             *
+             * Solo aparece inmediatamente después
+             * de cerrar una jornada desde esta pantalla.
+             */}
+
+            {finishMutation.data ? (
+              <>
+                <TrackingFinishedSummaryCard
+                  summary={finishMutation.data.summary}
+                />
+
+                {!finishMutation.data.localServiceStopped ? (
+                  <AppAlert tone="warning" title="Servicio local pendiente">
+                    La jornada fue cerrada correctamente en el servidor, pero el
+                    servicio local de ubicación requiere reconciliación.
+                  </AppAlert>
+                ) : null}
+              </>
+            ) : null}
+
+            {/*
+             * ---------------------------------------------
+             * PERFIL PARA PRÓXIMA JORNADA
+             * ---------------------------------------------
+             */}
+
+            <TrackingProfileCard journeyActive={false} />
+
+            <TrackingDeviceCard journeyActive={false} />
+            {/*
+             * ---------------------------------------------
+             * ESTADO INACTIVO
+             * ---------------------------------------------
+             */}
+
             <AppAlert tone="neutral" title="Sin jornada activa">
-              Inicia una jornada para habilitar posteriormente el seguimiento
-              GPS.
+              Inicia una jornada para comenzar el seguimiento de ubicación.
             </AppAlert>
 
             {startMutation.isError ? (
@@ -168,6 +334,12 @@ export function TrackingScreen() {
               </AppAlert>
             ) : null}
 
+            {/*
+             * ---------------------------------------------
+             * INICIAR JORNADA
+             * ---------------------------------------------
+             */}
+
             <AppButton
               fullWidth
               size="lg"
@@ -175,6 +347,13 @@ export function TrackingScreen() {
               loading={startMutation.isPending}
               loadingAccessibilityLabel="Iniciando jornada"
               onPress={() => {
+                /*
+                 * Si venimos de una jornada terminada,
+                 * quitamos el resumen anterior antes
+                 * de comenzar una nueva.
+                 */
+                finishMutation.reset();
+
                 startMutation.mutate();
               }}
             >

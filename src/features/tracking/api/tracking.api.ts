@@ -5,8 +5,13 @@ import { AppError } from "@/core/errors";
 import { httpClient } from "@/core/http";
 
 import {
+  finishTrackingResponseSchema,
+  registerTrackingLocationResponseSchema,
   startTrackingResponseSchema,
   trackingStateSchema,
+  type FinishTrackingResponse,
+  type RegisterTrackingLocationInput,
+  type RegisterTrackingLocationResponse,
   type StartTrackingResponse,
   type TrackingState,
 } from "./tracking.contracts";
@@ -72,5 +77,58 @@ export async function startTracking(
     startTrackingResponseSchema,
     payload,
     "TRACKING_START_INVALID_RESPONSE",
+  );
+}
+
+/**
+ * finalizar jornada
+ * @param sesionTrackingId
+ * @param signal
+ * @returns
+ */
+export async function finishTracking(
+  sesionTrackingId: number,
+  signal?: AbortSignal,
+): Promise<FinishTrackingResponse> {
+  const payload = await httpClient.request<unknown>({
+    method: "POST",
+
+    path: `real-time-location/tracking/${sesionTrackingId}/finish`,
+
+    auth: "auto",
+
+    signal,
+  });
+
+  return parseTrackingResponse(
+    finishTrackingResponseSchema,
+    payload,
+    "TRACKING_FINISH_INVALID_RESPONSE",
+  );
+}
+
+export async function registerTrackingLocation(
+  input: RegisterTrackingLocationInput,
+  signal?: AbortSignal,
+): Promise<RegisterTrackingLocationResponse> {
+  const payload = await httpClient.request<
+    unknown,
+    RegisterTrackingLocationInput
+  >({
+    method: "POST",
+
+    path: "real-time-location/tracking/location",
+
+    auth: "auto",
+
+    body: input,
+
+    signal,
+  });
+
+  return parseTrackingResponse(
+    registerTrackingLocationResponseSchema,
+    payload,
+    "TRACKING_LOCATION_INVALID_RESPONSE",
   );
 }
