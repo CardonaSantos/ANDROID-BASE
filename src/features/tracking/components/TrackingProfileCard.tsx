@@ -92,12 +92,6 @@ export function TrackingProfileCard({
           />
         </AppRadioGroup>
 
-        {journeyActive ? (
-          <AppAlert tone="info" title="Cambio durante la jornada">
-            Cambiar el perfil no finaliza ni reinicia tu jornada.
-          </AppAlert>
-        ) : null}
-
         {changeMutation.isError ? (
           <AppAlert tone="danger" title="No se pudo cambiar el perfil">
             Se conservará la configuración anterior.

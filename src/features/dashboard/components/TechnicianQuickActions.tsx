@@ -1,11 +1,8 @@
-import {
-  ChevronRight,
-  ClipboardList,
-  Wrench,
-  type LucideIcon,
-} from "lucide-react-native";
+import { ClipboardList, Router, type LucideIcon } from "lucide-react-native";
 
 import {
+  AppBadge,
+  AppButton,
   AppCard,
   AppGrid,
   AppIcon,
@@ -24,60 +21,66 @@ interface TechnicianQuickActionsProps {
   onOpenInstallations: () => void;
 }
 
-interface QuickActionProps {
+interface TechnicianQuickActionCardProps {
   icon: LucideIcon;
 
   title: string;
 
   description: string;
 
-  value: number;
+  pending: number;
 
-  helper: string;
+  badgeTone: "neutral" | "danger" | "warning";
+
+  actionLabel: string;
+
+  actionVariant: "solid" | "outlined";
 
   onPress: () => void;
 }
 
-function QuickAction({
+function TechnicianQuickActionCard({
   icon,
   title,
   description,
-  value,
-  helper,
+  pending,
+  badgeTone,
+  actionLabel,
+  actionVariant,
   onPress,
-}: QuickActionProps) {
+}: TechnicianQuickActionCardProps) {
   return (
-    <AppCard
-      onPress={onPress}
-      accessibilityLabel={title}
-      accessibilityHint={description}
-    >
+    <AppCard variant="outlined" radius="md" padding="md">
       <AppStack gap="md">
-        <AppInline gap="md" align="center">
-          <AppIcon icon={icon} size="lg" tone="primary" decorative />
+        <AppInline gap="md" align="flex-start" justify="space-between">
+          <AppInline gap="sm" align="center" flex>
+            <AppIcon icon={icon} size="md" tone="default" decorative />
 
-          <AppStack gap="xs" flex>
-            <AppText variant="titleMedium" weight="semibold">
-              {title}
-            </AppText>
+            <AppStack gap="xxs" flex>
+              <AppText variant="titleSmall" weight="semibold">
+                {title}
+              </AppText>
 
-            <AppText variant="bodySmall" tone="muted">
-              {description}
-            </AppText>
-          </AppStack>
+              <AppText variant="bodySmall" tone="muted">
+                {description}
+              </AppText>
+            </AppStack>
+          </AppInline>
 
-          <AppIcon icon={ChevronRight} size="sm" tone="muted" decorative />
+          <AppBadge tone={badgeTone} variant="soft" size="sm">
+            {`${pending} ${pending === 1 ? "pendiente" : "pendientes"}`}
+          </AppBadge>
         </AppInline>
 
-        <AppStack gap="xs">
-          <AppText variant="titleMedium" weight="semibold">
-            {value}
-          </AppText>
-
-          <AppText variant="bodySmall" tone="muted">
-            {helper}
-          </AppText>
-        </AppStack>
+        <AppButton
+          fullWidth
+          variant={actionVariant}
+          tone={actionVariant === "outlined" ? "neutral" : "primary"}
+          onPress={onPress}
+          accessibilityLabel={actionLabel}
+        >
+          {actionLabel}
+        </AppButton>
       </AppStack>
     </AppCard>
   );
@@ -89,22 +92,26 @@ export function TechnicianQuickActions({
   onOpenInstallations,
 }: TechnicianQuickActionsProps) {
   return (
-    <AppGrid minItemWidth={220} gap="md">
-      <QuickAction
+    <AppGrid minItemWidth={260} gap="md">
+      <TechnicianQuickActionCard
         icon={ClipboardList}
         title="Mis tickets"
-        description="Soporte técnico asignado"
-        value={workload.ticketsPendientes}
-        helper={`${workload.ticketsListosParaTrabajar} listos · ${workload.ticketsUrgentes} urgentes`}
+        description="Soporte asignado"
+        pending={workload.ticketsPendientes}
+        badgeTone={workload.ticketsUrgentes > 0 ? "danger" : "neutral"}
+        actionLabel="Ver tickets asignados"
+        actionVariant="solid"
         onPress={onOpenTickets}
       />
 
-      <QuickAction
-        icon={Wrench}
+      <TechnicianQuickActionCard
+        icon={Router}
         title="Mis instalaciones"
         description="Trabajo de campo asignado"
-        value={workload.instalacionesPendientes}
-        helper={`${workload.instalacionesProgramadasHoy} para hoy · ${workload.instalacionesAtrasadas} atrasadas`}
+        pending={workload.instalacionesPendientes}
+        badgeTone={workload.instalacionesAtrasadas > 0 ? "warning" : "neutral"}
+        actionLabel="Ver instalaciones asignadas"
+        actionVariant="outlined"
         onPress={onOpenInstallations}
       />
     </AppGrid>

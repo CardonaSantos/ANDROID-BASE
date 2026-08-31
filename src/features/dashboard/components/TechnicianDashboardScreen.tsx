@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import {
   AppAlert,
   AppButton,
+  AppGrid,
   AppInline,
   AppScrollScreen,
   AppStack,
@@ -15,20 +16,20 @@ import { useLogoutMutation } from "@/features/auth";
 
 import { useTechnicianPanelQuery } from "../hooks";
 
-import {
-  formatTechnicianPanelPeriod,
-  getTechnicianPendingWork,
-} from "../presentation";
+import { formatTechnicianPanelPeriod } from "../presentation";
 
-import { TechnicianActivityCard } from "./TechnicianActivityCard";
+import { TechnicianActivitySummaryCard } from "./TechnicianActivitySummaryCard";
 
 import { TechnicianJourneyCard } from "./TechnicianJourneyCard";
 
-import { TechnicianPerformanceCard } from "./TechnicianPerformanceCard";
+import { TechnicianProductivityCard } from "./TechnicianProductivityCard";
 
 import { TechnicianQuickActions } from "./TechnicianQuickActions";
 
+import { TechnicianTimesCard } from "./TechnicianTimesCard";
+
 import { TechnicianWorkloadCard } from "./TechnicianWorkloadCard";
+import { TechnicianActivityChart } from "./charts/TechnicianActivityChart";
 
 export function TechnicianDashboardScreen() {
   const router = useRouter();
@@ -36,6 +37,12 @@ export function TechnicianDashboardScreen() {
   const panelQuery = useTechnicianPanelQuery();
 
   const logoutMutation = useLogoutMutation();
+
+  /*
+   * =========================================================
+   * LOADING
+   * =========================================================
+   */
 
   if (panelQuery.isPending) {
     return (
@@ -50,6 +57,12 @@ export function TechnicianDashboardScreen() {
       </AppScrollScreen>
     );
   }
+
+  /*
+   * =========================================================
+   * ERROR
+   * =========================================================
+   */
 
   if (panelQuery.isError || !panelQuery.data) {
     return (
@@ -77,12 +90,20 @@ export function TechnicianDashboardScreen() {
 
   const panel = panelQuery.data;
 
-  const pendingWork = getTechnicianPendingWork(panel.cargaActual);
+  /*
+   * =========================================================
+   * CONTENT
+   * =========================================================
+   */
 
   return (
     <AppScrollScreen>
       <AppStack gap="2xl">
-        <AppInline gap="md" align="center">
+        {/* ========================================= */}
+        {/* HEADER */}
+        {/* ========================================= */}
+
+        <AppInline gap="md" align="center" justify="space-between" wrap>
           <AppStack gap="xs" flex>
             <AppText variant="headlineSmall" weight="semibold">
               Panel técnico
@@ -110,20 +131,19 @@ export function TechnicianDashboardScreen() {
           </AppButton>
         </AppInline>
 
-        <AppAlert
-          tone={pendingWork > 0 ? "info" : "neutral"}
-          title="Trabajo asignado"
-        >
-          {pendingWork > 0
-            ? `Tienes ${pendingWork} trabajos pendientes entre tickets e instalaciones.`
-            : "No tienes trabajos pendientes actualmente."}
-        </AppAlert>
+        {/* ========================================= */}
+        {/* JORNADA / GPS */}
+        {/* ========================================= */}
 
         <TechnicianJourneyCard
           onOpen={() => {
             router.push("/tracking");
           }}
         />
+
+        {/* ========================================= */}
+        {/* ACCIONES RÁPIDAS */}
+        {/* ========================================= */}
 
         <TechnicianQuickActions
           workload={panel.cargaActual}
@@ -135,17 +155,37 @@ export function TechnicianDashboardScreen() {
           }}
         />
 
+        {/* ========================================= */}
+        {/* CARGA ACTUAL */}
+        {/* ========================================= */}
+
         <TechnicianWorkloadCard workload={panel.cargaActual} />
 
-        <TechnicianPerformanceCard
-          productivity={panel.productividadMes}
-          times={panel.tiempos}
-        />
+        {/* ========================================= */}
+        {/* PRODUCTIVIDAD + TIEMPOS */}
+        {/* ========================================= */}
 
-        <TechnicianActivityCard
-          summary={panel.resumenActividad}
-          activity={panel.actividadDiaria}
-        />
+        <AppGrid gap="lg" minItemWidth={280}>
+          <TechnicianProductivityCard productivity={panel.productividadMes} />
+
+          <TechnicianTimesCard times={panel.tiempos} />
+        </AppGrid>
+
+        {/* ========================================= */}
+        {/* RESUMEN DE ACTIVIDAD */}
+        {/* ========================================= */}
+
+        <TechnicianActivitySummaryCard summary={panel.resumenActividad} />
+
+        {/* ========================================= */}
+        {/* GRÁFICA DEL MES */}
+        {/* ========================================= */}
+
+        <TechnicianActivityChart activity={panel.actividadDiaria} />
+
+        {/* ========================================= */}
+        {/* LOGOUT ERROR */}
+        {/* ========================================= */}
 
         {logoutMutation.isError ? (
           <AppAlert tone="danger" title="No se pudo cerrar la sesión">
@@ -153,6 +193,10 @@ export function TechnicianDashboardScreen() {
             resolverlos antes de eliminar tu sesión.
           </AppAlert>
         ) : null}
+
+        {/* ========================================= */}
+        {/* LOGOUT */}
+        {/* ========================================= */}
 
         <AppButton
           variant="outlined"
