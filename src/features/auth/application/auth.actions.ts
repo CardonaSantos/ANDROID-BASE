@@ -8,6 +8,7 @@ import { sessionManager } from "@/core/session";
 
 import { loginUser, type AuthUser, type LoginCredentials } from "../api";
 
+import { authProfileQueryKey } from "./auth-profile.query";
 import { mapAuthUserToCurrentUser } from "./auth.mapper";
 
 export type BeforeLogoutHandler = () => Promise<void>;
@@ -68,6 +69,22 @@ export async function login(credentials: LoginCredentials): Promise<AuthUser> {
 
   const currentUser = mapAuthUserToCurrentUser(response.user);
 
+  /*
+   * Guardamos el perfil completo para
+   * componentes de aplicación:
+   *
+   * - toolbar
+   * - avatar
+   * - menú de usuario
+   * - perfil
+   */
+  queryClient.setQueryData(authProfileQueryKey, response.user);
+
+  /*
+   * Access conserva únicamente la
+   * representación mínima necesaria
+   * para roles y permisos.
+   */
   queryClient.setQueryData(currentUserQueryKey, currentUser);
 
   return response.user;
@@ -94,4 +111,10 @@ export async function logout(): Promise<void> {
   await sessionManager.clear();
 
   removeCurrentUser();
+
+  queryClient.removeQueries({
+    queryKey: authProfileQueryKey,
+
+    exact: true,
+  });
 }
