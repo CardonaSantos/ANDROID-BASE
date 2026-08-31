@@ -93,13 +93,13 @@ export function TrackingSyncCard({ sessionId }: TrackingSyncCardProps) {
           <AppText>{formatDate(status.lastSuccessfulSyncAt)}</AppText>
         </AppStack>
 
-        <AppStack gap="xs">
+        {/* <AppStack gap="xs">
           <AppText variant="labelMedium" tone="muted">
             Heartbeat confirmado
           </AppText>
 
           <AppText>{formatDate(status.lastServerHeartbeatAt)}</AppText>
-        </AppStack>
+        </AppStack> */}
       </AppStack>
     </AppCard>
   );

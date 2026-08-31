@@ -1,49 +1,31 @@
-import {
-  queryOptions,
-} from "@tanstack/react-query";
+import { queryOptions } from "@tanstack/react-query";
 
-import {
-  AppError,
-} from "@/core/errors";
+import { AppError } from "@/core/errors";
 
-import type {
-  CurrentUser,
-  CurrentUserLoader,
-} from "./access.types";
+import type { CurrentUser, CurrentUserLoader } from "./access.types";
 
-export const currentUserQueryKey = [
-  "access",
-  "current-user",
-] as const;
+export const currentUserQueryKey = ["access", "current-user"] as const;
 
-let currentUserLoader:
-  CurrentUserLoader | null =
-  null;
+let currentUserLoader: CurrentUserLoader | null = null;
 
-function getCurrentUserLoader():
-  CurrentUserLoader {
+function getCurrentUserLoader(): CurrentUserLoader {
   if (!currentUserLoader) {
     throw new AppError({
       kind: "bad_request",
 
       source: "application",
 
-      code:
-        "CURRENT_USER_LOADER_NOT_CONFIGURED",
+      code: "CURRENT_USER_LOADER_NOT_CONFIGURED",
 
-      message:
-        "Current user loader is not configured.",
+      message: "Current user loader is not configured.",
     });
   }
 
   return currentUserLoader;
 }
 
-async function loadCurrentUser(
-  signal?: AbortSignal,
-): Promise<CurrentUser> {
-  const loader =
-    getCurrentUserLoader();
+async function loadCurrentUser(signal?: AbortSignal): Promise<CurrentUser> {
+  const loader = getCurrentUserLoader();
 
   return loader({
     signal,
@@ -52,57 +34,61 @@ async function loadCurrentUser(
 
 export function currentUserQueryOptions() {
   return queryOptions({
-    queryKey:
-      currentUserQueryKey,
+    queryKey: currentUserQueryKey,
 
-    queryFn: ({
-      signal,
-    }) =>
-      loadCurrentUser(
-        signal,
-      ),
+    queryFn: ({ signal }) => loadCurrentUser(signal),
+
+    /*
+     * CurrentUser representa identidad
+     * de sesión, no información de alta
+     * frecuencia.
+     *
+     * El login ya alimenta esta cache y
+     * una recarga en frío volverá a usar
+     * GET /auth/profile.
+     */
+    staleTime: 5 * 60 * 1000,
+
+    /*
+     * Evitamos volver a consultar identidad
+     * solamente porque el navegador/app
+     * recuperó focus.
+     *
+     * Las invalidaciones explícitas siguen
+     * funcionando.
+     */
+    refetchOnWindowFocus: false,
   });
 }
 
 export function configureCurrentUserLoader(
   loader: CurrentUserLoader,
 ): () => void {
-  if (
-    currentUserLoader !== null &&
-    currentUserLoader !== loader
-  ) {
+  if (currentUserLoader !== null && currentUserLoader !== loader) {
     throw new AppError({
       kind: "bad_request",
 
       source: "application",
 
-      code:
-        "CURRENT_USER_LOADER_ALREADY_CONFIGURED",
+      code: "CURRENT_USER_LOADER_ALREADY_CONFIGURED",
 
-      message:
-        "Current user loader is already configured.",
+      message: "Current user loader is already configured.",
     });
   }
 
-  currentUserLoader =
-    loader;
+  currentUserLoader = loader;
 
-  let released =
-    false;
+  let released = false;
 
   return () => {
     if (released) {
       return;
     }
 
-    released =
-      true;
+    released = true;
 
-    if (
-      currentUserLoader === loader
-    ) {
-      currentUserLoader =
-        null;
+    if (currentUserLoader === loader) {
+      currentUserLoader = null;
     }
   };
 }

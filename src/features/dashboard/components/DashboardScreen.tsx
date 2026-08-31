@@ -32,7 +32,7 @@ export function DashboardScreen() {
     );
   }
 
-  if (currentUserQuery.isError || !currentUserQuery.data) {
+  if (!currentUserQuery.data) {
     return (
       <AppScrollScreen>
         <AppAlert tone="danger" title="No se pudo cargar el usuario">

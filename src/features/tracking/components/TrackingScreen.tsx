@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Clock, MapPin, Play, Square } from "lucide-react-native";
+import { MapPin, Play, Square } from "lucide-react-native";
 
 import { isAppError } from "@/core/errors";
 
@@ -186,7 +186,7 @@ export function TrackingScreen() {
                   <AppText>{formatDate(tracking.iniciadoEn)}</AppText>
                 </AppStack>
 
-                <AppStack gap="xs">
+                {/* <AppStack gap="xs">
                   <AppIcon icon={Clock} size="sm" tone="muted" decorative />
 
                   <AppText variant="labelMedium" tone="muted">
@@ -194,7 +194,7 @@ export function TrackingScreen() {
                   </AppText>
 
                   <AppText>{formatDate(tracking.ultimoHeartbeatEn)}</AppText>
-                </AppStack>
+                </AppStack> */}
               </AppStack>
             </AppCard>
 

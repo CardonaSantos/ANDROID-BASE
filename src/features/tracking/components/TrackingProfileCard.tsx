@@ -64,11 +64,6 @@ export function TrackingProfileCard({
           <AppText variant="titleMedium" weight="semibold">
             Perfil de seguimiento
           </AppText>
-
-          <AppText tone="muted">
-            Define el equilibrio entre actualización de ubicación y consumo de
-            batería.
-          </AppText>
         </AppStack>
 
         <AppRadioGroup
@@ -99,8 +94,7 @@ export function TrackingProfileCard({
 
         {journeyActive ? (
           <AppAlert tone="info" title="Cambio durante la jornada">
-            Cambiar el perfil no finaliza ni reinicia tu jornada. Solo modifica
-            la frecuencia del seguimiento del dispositivo.
+            Cambiar el perfil no finaliza ni reinicia tu jornada.
           </AppAlert>
         ) : null}
 

@@ -1,6 +1,5 @@
-import {
-  useEffect,
-} from 'react';
+import { Children, useEffect, type ReactNode } from "react";
+
 import {
   CircleAlert,
   CircleCheck,
@@ -8,44 +7,30 @@ import {
   CircleX,
   Info,
   X,
-} from 'lucide-react-native';
-import {
-  View,
-} from 'react-native';
-import {
-  StyleSheet,
-} from 'react-native-unistyles';
+} from "lucide-react-native";
+
+import { View } from "react-native";
+
+import { StyleSheet } from "react-native-unistyles";
 
 import {
   accessibilityAnnouncer,
   toAccessibilityLiveRegion,
-} from '../../accessibility';
-import {
-  AppIconButton,
-} from '../../actions';
-import type {
-  FeedbackTone,
-} from '../../feedback';
-import {
-  AppInline,
-  AppStack,
-} from '../../layout';
-import {
-  AppIcon,
-  AppText,
-} from '../../primitives';
+} from "../../accessibility";
 
-import {
-  feedbackCopy,
-} from '../feedback.copy';
-import {
-  resolveFeedbackToneTokens,
-} from '../feedback-colors';
+import { AppIconButton } from "../../actions";
 
-import type {
-  AppAlertProps,
-  AppAlertDensity,
-} from './AppAlert.types';
+import type { FeedbackTone } from "../../feedback";
+
+import { AppInline, AppStack } from "../../layout";
+
+import { AppIcon, AppText } from "../../primitives";
+
+import { feedbackCopy } from "../feedback.copy";
+
+import { resolveFeedbackToneTokens } from "../feedback-colors";
+
+import type { AppAlertDensity, AppAlertProps } from "./AppAlert.types";
 
 const defaultIcon = {
   neutral: CircleHelp,
@@ -57,165 +42,130 @@ const defaultIcon = {
 
 const defaultLiveRegion = (
   tone: FeedbackTone,
-):
-  | 'off'
-  | 'polite'
-  | 'assertive' => {
-  if (tone === 'danger') {
-    return 'assertive';
+): "off" | "polite" | "assertive" => {
+  if (tone === "danger") {
+    return "assertive";
   }
 
-  if (
-    tone === 'success' ||
-    tone === 'warning' ||
-    tone === 'info'
-  ) {
-    return 'polite';
+  if (tone === "success" || tone === "warning" || tone === "info") {
+    return "polite";
   }
 
-  return 'off';
+  return "off";
 };
+
+/**
+ * React puede convertir esto:
+ *
+ * <AppAlert>
+ *   Total: {10}. Pendientes: {2}.
+ * </AppAlert>
+ *
+ * en un array de nodos primitivos:
+ *
+ * [
+ *   "Total: ",
+ *   10,
+ *   ". Pendientes: ",
+ *   2,
+ *   ".",
+ * ]
+ *
+ * Aunque conceptualmente siga siendo texto,
+ * typeof children ya no será "string".
+ *
+ * React Native no permite que esos nodos
+ * terminen directamente dentro de un View.
+ */
+function isTextOnlyNode(node: ReactNode): boolean {
+  const nodes = Children.toArray(node);
+
+  if (nodes.length === 0) {
+    return false;
+  }
+
+  return nodes.every(
+    (child) => typeof child === "string" || typeof child === "number",
+  );
+}
 
 export const AppAlert = ({
   title,
   children,
   icon,
-  tone = 'info',
-  density = 'default',
+  tone = "info",
+  density = "default",
   action,
   onDismiss,
-  dismissAccessibilityLabel =
-    feedbackCopy.alert.dismiss,
+  dismissAccessibilityLabel = feedbackCopy.alert.dismiss,
   liveRegion,
   announceOnMount = false,
   announcement,
   style,
   testID,
 }: AppAlertProps) => {
-  const tokens =
-    resolveFeedbackToneTokens(
-      tone,
-    );
+  const tokens = resolveFeedbackToneTokens(tone);
 
-  const Icon =
-    icon === null
-      ? null
-      : icon ??
-        defaultIcon[tone];
+  const Icon = icon === null ? null : (icon ?? defaultIcon[tone]);
 
-  const resolvedLiveRegion =
-    liveRegion ??
-    defaultLiveRegion(tone);
+  const resolvedLiveRegion = liveRegion ?? defaultLiveRegion(tone);
 
   useEffect(() => {
-    if (
-      !announceOnMount
-    ) {
+    if (!announceOnMount) {
       return;
     }
 
     const message =
-      announcement ??
-      (typeof title === 'string'
-        ? title
-        : undefined);
+      announcement ?? (typeof title === "string" ? title : undefined);
 
     if (!message) {
       return;
     }
 
-    if (
-      resolvedLiveRegion ===
-      'assertive'
-    ) {
-      accessibilityAnnouncer
-        .assertive(message);
-    } else if (
-      resolvedLiveRegion ===
-      'polite'
-    ) {
-      accessibilityAnnouncer
-        .polite(message);
+    if (resolvedLiveRegion === "assertive") {
+      accessibilityAnnouncer.assertive(message);
+    } else if (resolvedLiveRegion === "polite") {
+      accessibilityAnnouncer.polite(message);
     }
-  }, [
-    announceOnMount,
-    announcement,
-    resolvedLiveRegion,
-    title,
-  ]);
+  }, [announceOnMount, announcement, resolvedLiveRegion, title]);
+
+  const hasTitle = title !== null && title !== undefined && title !== false;
+
+  const hasContent =
+    children !== null && children !== undefined && children !== false;
+
+  const titleIsText = hasTitle && isTextOnlyNode(title);
+
+  const contentIsText = hasContent && isTextOnlyNode(children);
 
   return (
     <View
-      accessibilityLiveRegion={
-        toAccessibilityLiveRegion(
-          resolvedLiveRegion,
-        )
-      }
+      accessibilityLiveRegion={toAccessibilityLiveRegion(resolvedLiveRegion)}
       testID={testID}
-      style={[
-        styles.alert(
-          density,
-          tokens.container,
-        ),
-        style,
-      ]}
+      style={[styles.alert(density, tokens.container), style]}
     >
-      <AppInline
-        gap={
-          density === 'compact'
-            ? 'sm'
-            : 'md'
-        }
-        align="flex-start"
-      >
+      <AppInline gap={density === "compact" ? "sm" : "md"} align="flex-start">
         {Icon ? (
-          <View
-            style={
-              styles.iconSlot(
-                density,
-              )
-            }
-          >
+          <View style={styles.iconSlot(density)}>
             <AppIcon
               icon={Icon}
-              size={
-                density ===
-                'compact'
-                  ? 'sm'
-                  : 'md'
-              }
-              colorToken={
-                tokens.strong
-              }
+              size={density === "compact" ? "sm" : "md"}
+              colorToken={tokens.strong}
               decorative
             />
           </View>
         ) : null}
 
         <AppStack
-          gap={
-            density === 'compact'
-              ? 'xxs'
-              : 'xs'
-          }
+          gap={density === "compact" ? "xxs" : "xs"}
           flex
           style={styles.content}
         >
-          {title ? (
-            typeof title ===
-              'string' ||
-            typeof title ===
-              'number' ? (
+          {hasTitle ? (
+            titleIsText ? (
               <AppText
-                variant={
-                  density ===
-                    'compact'
-                    ? 'labelLarge'
-                    : 'titleSmall'
-                }
-                colorToken={
-                  tokens.content
-                }
+                variant={density === "compact" ? "labelLarge" : "titleSmall"}
+                colorToken={tokens.content}
                 weight="semibold"
               >
                 {title}
@@ -225,21 +175,11 @@ export const AppAlert = ({
             )
           ) : null}
 
-          {children ? (
-            typeof children ===
-              'string' ||
-            typeof children ===
-              'number' ? (
+          {hasContent ? (
+            contentIsText ? (
               <AppText
-                variant={
-                  density ===
-                    'compact'
-                    ? 'bodySmall'
-                    : 'bodyMedium'
-                }
-                colorToken={
-                  tokens.content
-                }
+                variant={density === "compact" ? "bodySmall" : "bodyMedium"}
+                colorToken={tokens.content}
               >
                 {children}
               </AppText>
@@ -248,15 +188,7 @@ export const AppAlert = ({
             )
           ) : null}
 
-          {action ? (
-            <View
-              style={
-                styles.action
-              }
-            >
-              {action}
-            </View>
-          ) : null}
+          {action ? <View style={styles.action}>{action}</View> : null}
         </AppStack>
 
         {onDismiss ? (
@@ -266,9 +198,7 @@ export const AppAlert = ({
             variant="ghost"
             tone="neutral"
             interaction="subtle"
-            accessibilityLabel={
-              dismissAccessibilityLabel
-            }
+            accessibilityLabel={dismissAccessibilityLabel}
             onPress={onDismiss}
           />
         ) : null}
@@ -277,44 +207,30 @@ export const AppAlert = ({
   );
 };
 
-const styles = StyleSheet.create(
-  (theme) => ({
-    alert: (
-      density:
-        AppAlertDensity,
-      container:
-        keyof typeof theme.colors,
-    ) => ({
-      width: '100%',
-      borderRadius:
-        theme.radius.lg,
-      padding:
-        density === 'compact'
-          ? theme.spacing.md
-          : theme.spacing.lg,
-      backgroundColor:
-        theme.colors[container],
-    }),
+const styles = StyleSheet.create((theme) => ({
+  alert: (density: AppAlertDensity, container: keyof typeof theme.colors) => ({
+    width: "100%",
 
-    iconSlot: (
-      density:
-        AppAlertDensity,
-    ) => ({
-      minHeight:
-        density === 'compact'
-          ? 24
-          : 28,
-      justifyContent: 'center',
-    }),
+    borderRadius: theme.radius.lg,
 
-    content: {
-      minWidth: 0,
-    },
+    padding: density === "compact" ? theme.spacing.md : theme.spacing.lg,
 
-    action: {
-      alignSelf: 'flex-start',
-      marginTop:
-        theme.spacing.xs,
-    },
+    backgroundColor: theme.colors[container],
   }),
-);
+
+  iconSlot: (density: AppAlertDensity) => ({
+    minHeight: density === "compact" ? 24 : 28,
+
+    justifyContent: "center",
+  }),
+
+  content: {
+    minWidth: 0,
+  },
+
+  action: {
+    alignSelf: "flex-start",
+
+    marginTop: theme.spacing.xs,
+  },
+}));
