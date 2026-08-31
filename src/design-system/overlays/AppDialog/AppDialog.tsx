@@ -1,52 +1,28 @@
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  View,
-} from 'react-native';
-import {
-  X,
-} from 'lucide-react-native';
-import {
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-import {
-  StyleSheet,
-} from 'react-native-unistyles';
+import { Modal, Pressable, ScrollView, View } from "react-native";
 
-import {
-  AppIconButton,
-} from '../../actions';
-import type {
-  ComponentTone,
-} from '../../contracts';
-import {
-  useControllableState,
-} from '../../hooks';
-import {
-  AppInline,
-  AppStack,
-} from '../../layout';
-import {
-  AppIcon,
-  AppSurface,
-  AppText,
-} from '../../primitives';
-import {
-  spacing,
-} from '../../tokens';
-import {
-  resolveToneContainerColor,
-} from '../../utils';
+import { X } from "lucide-react-native";
 
-import {
-  overlayCopy,
-} from '../overlay.copy';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import type {
-  AppDialogProps,
-  AppDialogSize,
-} from './AppDialog.types';
+import { StyleSheet } from "react-native-unistyles";
+
+import { AppIconButton } from "../../actions";
+
+import type { ComponentTone } from "../../contracts";
+
+import { useControllableState } from "../../hooks";
+
+import { AppInline, AppStack } from "../../layout";
+
+import { AppIcon, AppSurface, AppText } from "../../primitives";
+
+import { spacing } from "../../tokens";
+
+import { resolveToneContainerColor } from "../../utils";
+
+import { overlayCopy } from "../overlay.copy";
+
+import type { AppDialogProps, AppDialogSize } from "./AppDialog.types";
 
 const dialogWidth = {
   sm: 400,
@@ -57,31 +33,31 @@ const dialogWidth = {
 const iconContentToken = (
   tone: ComponentTone,
 ):
-  | 'text'
-  | 'onPrimaryContainer'
-  | 'onSuccessContainer'
-  | 'onWarningContainer'
-  | 'onDangerContainer'
-  | 'onInfoContainer' => {
+  | "text"
+  | "onPrimaryContainer"
+  | "onSuccessContainer"
+  | "onWarningContainer"
+  | "onDangerContainer"
+  | "onInfoContainer" => {
   switch (tone) {
-    case 'primary':
-      return 'onPrimaryContainer';
+    case "primary":
+      return "onPrimaryContainer";
 
-    case 'success':
-      return 'onSuccessContainer';
+    case "success":
+      return "onSuccessContainer";
 
-    case 'warning':
-      return 'onWarningContainer';
+    case "warning":
+      return "onWarningContainer";
 
-    case 'danger':
-      return 'onDangerContainer';
+    case "danger":
+      return "onDangerContainer";
 
-    case 'info':
-      return 'onInfoContainer';
+    case "info":
+      return "onInfoContainer";
 
-    case 'neutral':
+    case "neutral":
     default:
-      return 'text';
+      return "text";
   }
 };
 
@@ -94,44 +70,32 @@ export const AppDialog = ({
   icon,
   children,
   actions,
-  tone = 'neutral',
-  size = 'md',
+  tone = "neutral",
+  size = "md",
   dismissable = true,
   showCloseButton = true,
-  closeAccessibilityLabel =
-    overlayCopy.dialog.close,
+  closeAccessibilityLabel = overlayCopy.dialog.close,
   scrollable = false,
   style,
   contentStyle,
   testID,
 }: AppDialogProps) => {
-  const insets =
-    useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
 
-  const controlled =
-    open !== undefined;
+  const controlled = open !== undefined;
 
-  const [
-    isOpen,
-    setOpen,
-  ] =
-    useControllableState<boolean>(
-      controlled
-        ? {
-            value:
-              open ?? false,
-            defaultValue:
-              defaultOpen,
-            onValueChange:
-              onOpenChange,
-          }
-        : {
-            defaultValue:
-              defaultOpen,
-            onValueChange:
-              onOpenChange,
-          },
-    );
+  const [isOpen, setOpen] = useControllableState<boolean>(
+    controlled
+      ? {
+          value: open ?? false,
+          defaultValue: defaultOpen,
+          onValueChange: onOpenChange,
+        }
+      : {
+          defaultValue: defaultOpen,
+          onValueChange: onOpenChange,
+        },
+  );
 
   const close = () => {
     if (dismissable) {
@@ -139,11 +103,7 @@ export const AppDialog = ({
     }
   };
 
-  const body = (
-    <AppStack gap="lg">
-      {children}
-    </AppStack>
-  );
+  const body = <AppStack gap="lg">{children}</AppStack>;
 
   return (
     <Modal
@@ -161,103 +121,56 @@ export const AppDialog = ({
         style={[
           styles.root,
           {
-            paddingTop:
-              insets.top +
-              spacing.lg,
-            paddingRight:
-              insets.right +
-              spacing.lg,
-            paddingBottom:
-              insets.bottom +
-              spacing.lg,
-            paddingLeft:
-              insets.left +
-              spacing.lg,
+            paddingTop: insets.top + spacing.lg,
+
+            paddingRight: insets.right + spacing.lg,
+
+            paddingBottom: insets.bottom + spacing.lg,
+
+            paddingLeft: insets.left + spacing.lg,
           },
         ]}
       >
         <Pressable
-          accessible={
-            dismissable
-          }
-          accessibilityRole={
-            dismissable
-              ? 'button'
-              : undefined
-          }
-          accessibilityLabel={
-            dismissable
-              ? closeAccessibilityLabel
-              : undefined
-          }
+          accessible={dismissable}
+          accessibilityRole={dismissable ? "button" : undefined}
+          accessibilityLabel={dismissable ? closeAccessibilityLabel : undefined}
           onPress={close}
           style={styles.backdrop}
         />
 
         <View
+          pointerEvents="box-none"
           accessibilityViewIsModal
           importantForAccessibility="yes"
-          style={
-            styles.center
-          }
+          style={styles.center}
         >
           <AppSurface
             variant="elevated"
             radius="xl"
             padding="none"
             elevation="high"
-            style={[
-              styles.dialog(size),
-              style,
-            ]}
+            style={[styles.dialog(size), style]}
           >
-            <AppStack gap="none">
-              {title ||
-              description ||
-              icon ||
-              showCloseButton ? (
-                <View
-                  style={
-                    styles.header
-                  }
-                >
-                  <AppInline
-                    gap="md"
-                    align="flex-start"
-                  >
+            <AppStack gap="none" style={styles.dialogLayout}>
+              {title || description || icon || showCloseButton ? (
+                <View style={styles.header}>
+                  <AppInline gap="md" align="flex-start">
                     {icon ? (
-                      <View
-                        style={
-                          styles.icon(
-                            tone,
-                          )
-                        }
-                      >
+                      <View style={styles.icon(tone)}>
                         <AppIcon
                           icon={icon}
                           size="lg"
-                          colorToken={
-                            iconContentToken(
-                              tone,
-                            )
-                          }
+                          colorToken={iconContentToken(tone)}
                           decorative
                         />
                       </View>
                     ) : null}
 
-                    <AppStack
-                      gap="xs"
-                      flex
-                      style={
-                        styles.headerText
-                      }
-                    >
+                    <AppStack gap="xs" flex style={styles.headerText}>
                       {title ? (
-                        typeof title ===
-                          'string' ||
-                        typeof title ===
-                          'number' ? (
+                        typeof title === "string" ||
+                        typeof title === "number" ? (
                           <AppText
                             variant="titleLarge"
                             accessibilityRole="header"
@@ -271,17 +184,10 @@ export const AppDialog = ({
                       ) : null}
 
                       {description ? (
-                        typeof description ===
-                          'string' ||
-                        typeof description ===
-                          'number' ? (
-                          <AppText
-                            variant="bodyMedium"
-                            tone="secondary"
-                          >
-                            {
-                              description
-                            }
+                        typeof description === "string" ||
+                        typeof description === "number" ? (
+                          <AppText variant="bodyMedium" tone="secondary">
+                            {description}
                           </AppText>
                         ) : (
                           description
@@ -296,13 +202,9 @@ export const AppDialog = ({
                         variant="ghost"
                         tone="neutral"
                         interaction="subtle"
-                        accessibilityLabel={
-                          closeAccessibilityLabel
-                        }
+                        accessibilityLabel={closeAccessibilityLabel}
                         onPress={() => {
-                          setOpen(
-                            false,
-                          );
+                          setOpen(false);
                         }}
                       />
                     ) : null}
@@ -313,38 +215,18 @@ export const AppDialog = ({
               {children ? (
                 scrollable ? (
                   <ScrollView
-                    style={
-                      styles.scroll
-                    }
-                    contentContainerStyle={[
-                      styles.content,
-                      contentStyle,
-                    ]}
+                    style={styles.scroll}
+                    contentContainerStyle={[styles.content, contentStyle]}
                     keyboardShouldPersistTaps="handled"
                   >
                     {body}
                   </ScrollView>
                 ) : (
-                  <View
-                    style={[
-                      styles.content,
-                      contentStyle,
-                    ]}
-                  >
-                    {body}
-                  </View>
+                  <View style={[styles.content, contentStyle]}>{body}</View>
                 )
               ) : null}
 
-              {actions ? (
-                <View
-                  style={
-                    styles.actions
-                  }
-                >
-                  {actions}
-                </View>
-              ) : null}
+              {actions ? <View style={styles.actions}>{actions}</View> : null}
             </AppStack>
           </AppSurface>
         </View>
@@ -353,87 +235,121 @@ export const AppDialog = ({
   );
 };
 
-const styles = StyleSheet.create(
-  (theme) => ({
-    root: {
-      flex: 1,
-      justifyContent: 'center',
-    },
+const styles = StyleSheet.create((theme) => ({
+  root: {
+    flex: 1,
+    justifyContent: "center",
+  },
 
-    backdrop: {
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-      backgroundColor:
-        theme.colors.scrim,
-    },
+  backdrop: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: theme.colors.scrim,
+  },
 
-    center: {
-      width: '100%',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
+  center: {
+    width: "100%",
 
-    dialog: (
-      size: AppDialogSize,
-    ) => ({
-      width: '100%',
-      maxWidth:
-        dialogWidth[size],
-      maxHeight: '90%',
-      overflow: 'hidden',
-      backgroundColor:
-        theme.colors
-          .surfaceElevated,
-    }),
+    minHeight: 0,
 
-    header: {
-      paddingTop:
-        theme.spacing.xl,
-      paddingHorizontal:
-        theme.spacing.xl,
-    },
+    flexShrink: 1,
 
-    headerText: {
-      minWidth: 0,
-    },
+    alignItems: "center",
 
-    icon: (
-      tone: ComponentTone,
-    ) => ({
-      width: 44,
-      height: 44,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius:
-        theme.radius.full,
-      backgroundColor:
-        resolveToneContainerColor(
-          theme,
-          tone,
-        ),
-    }),
+    justifyContent: "center",
+  },
 
-    scroll: {
-      maxHeight: 520,
-    },
+  dialog: (size: AppDialogSize) => ({
+    width: "100%",
 
-    content: {
-      paddingTop:
-        theme.spacing.lg,
-      paddingHorizontal:
-        theme.spacing.xl,
-      paddingBottom:
-        theme.spacing.xl,
-    },
+    maxWidth: dialogWidth[size],
 
-    actions: {
-      paddingHorizontal:
-        theme.spacing.xl,
-      paddingBottom:
-        theme.spacing.xl,
-    },
+    /*
+     * Nunca permitimos que el diálogo
+     * se salga del viewport.
+     */
+    maxHeight: "90%",
+
+    minHeight: 0,
+
+    overflow: "hidden",
+
+    backgroundColor: theme.colors.surfaceElevated,
   }),
-);
+
+  /*
+   * Es importante que header, body y
+   * actions compartan correctamente
+   * el espacio disponible.
+   */
+  dialogLayout: {
+    minHeight: 0,
+
+    maxHeight: "100%",
+  },
+
+  header: {
+    flexShrink: 0,
+
+    paddingTop: theme.spacing.xl,
+
+    paddingHorizontal: theme.spacing.xl,
+  },
+
+  headerText: {
+    minWidth: 0,
+  },
+
+  icon: (tone: ComponentTone) => ({
+    width: 44,
+    height: 44,
+
+    flexShrink: 0,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    borderRadius: theme.radius.full,
+
+    backgroundColor: resolveToneContainerColor(theme, tone),
+  }),
+
+  scroll: {
+    /*
+     * El body es la única sección
+     * que puede ceder espacio.
+     *
+     * Header y actions permanecen
+     * visibles.
+     */
+    minHeight: 0,
+
+    flexShrink: 1,
+
+    maxHeight: 520,
+  },
+
+  content: {
+    paddingTop: theme.spacing.lg,
+
+    paddingHorizontal: theme.spacing.xl,
+
+    paddingBottom: theme.spacing.xl,
+  },
+
+  actions: {
+    /*
+     * Los botones nunca deben ser
+     * aplastados por contenido grande.
+     */
+    flexShrink: 0,
+
+    paddingHorizontal: theme.spacing.xl,
+
+    paddingBottom: theme.spacing.xl,
+  },
+}));

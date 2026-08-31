@@ -1,22 +1,10 @@
-import {
-  AppActionGroup,
-  AppButton,
-} from '../../actions';
-import {
-  useActionHandler,
-  useControllableState,
-} from '../../hooks';
+import { AppActionGroup, AppButton } from "../../actions";
+import { useActionHandler, useControllableState } from "../../hooks";
 
-import {
-  AppDialog,
-} from '../AppDialog';
-import {
-  overlayCopy,
-} from '../overlay.copy';
+import { AppDialog } from "../AppDialog";
+import { overlayCopy } from "../overlay.copy";
 
-import type {
-  AppConfirmDialogProps,
-} from './AppConfirmDialog.types';
+import type { AppConfirmDialogProps } from "./AppConfirmDialog.types";
 
 export const AppConfirmDialog = ({
   open,
@@ -26,56 +14,46 @@ export const AppConfirmDialog = ({
   description,
   children,
   icon,
-  tone = 'neutral',
-  size = 'sm',
-  confirmLabel =
-    overlayCopy.confirm.confirm,
-  cancelLabel =
-    overlayCopy.confirm.cancel,
-  confirmTone = 'primary',
+  tone = "neutral",
+  size = "md",
+
+  scrollable = false,
+
+  confirmLabel = overlayCopy.confirm.confirm,
+  cancelLabel = overlayCopy.confirm.cancel,
+  confirmTone = "primary",
   onConfirm,
   onCancel,
   dismissable = true,
   testID,
 }: AppConfirmDialogProps) => {
-  const controlled =
-    open !== undefined;
+  const controlled = open !== undefined;
 
-  const [
-    isOpen,
-    setOpen,
-  ] =
-    useControllableState<boolean>(
-      controlled
-        ? {
-            value:
-              open ?? false,
-            defaultValue:
-              defaultOpen,
-            onValueChange:
-              onOpenChange,
-          }
-        : {
-            defaultValue:
-              defaultOpen,
-            onValueChange:
-              onOpenChange,
-          },
-    );
+  const [isOpen, setOpen] = useControllableState<boolean>(
+    controlled
+      ? {
+          value: open ?? false,
+          defaultValue: defaultOpen,
+          onValueChange: onOpenChange,
+        }
+      : {
+          defaultValue: defaultOpen,
+          onValueChange: onOpenChange,
+        },
+  );
 
-  const confirm =
-    useActionHandler({
-      onAction: onConfirm,
-      successFeedback: {
-        haptic: 'success',
-      },
-      errorFeedback: {
-        haptic: 'error',
-      },
-      onSuccess: () => {
-        setOpen(false);
-      },
-    });
+  const confirm = useActionHandler({
+    onAction: onConfirm,
+    successFeedback: {
+      haptic: "success",
+    },
+    errorFeedback: {
+      haptic: "error",
+    },
+    onSuccess: () => {
+      setOpen(false);
+    },
+  });
 
   const cancel = () => {
     if (confirm.pending) {
@@ -89,33 +67,22 @@ export const AppConfirmDialog = ({
   return (
     <AppDialog
       open={isOpen}
-      onOpenChange={
-        setOpen
-      }
+      onOpenChange={setOpen}
       title={title}
-      description={
-        description
-      }
+      description={description}
       icon={icon}
       tone={tone}
       size={size}
-      dismissable={
-        dismissable &&
-        !confirm.pending
-      }
+      dismissable={dismissable && !confirm.pending}
       showCloseButton={false}
+      scrollable={scrollable}
       testID={testID}
       actions={
-        <AppActionGroup
-          orientation="auto"
-          align="end"
-        >
+        <AppActionGroup orientation="auto" align="end">
           <AppButton
             variant="ghost"
             tone="neutral"
-            disabled={
-              confirm.pending
-            }
+            disabled={confirm.pending}
             onPress={cancel}
           >
             {cancelLabel}
@@ -123,12 +90,8 @@ export const AppConfirmDialog = ({
 
           <AppButton
             variant="solid"
-            tone={
-              confirmTone
-            }
-            loading={
-              confirm.pending
-            }
+            tone={confirmTone}
+            loading={confirm.pending}
             onPress={() => {
               void confirm.execute();
             }}

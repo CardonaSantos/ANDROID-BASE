@@ -1,8 +1,17 @@
-import { ChevronLeft, ChevronRight, ImageIcon } from "lucide-react-native";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ImageIcon,
+  Maximize2,
+  Minimize2,
+  X,
+} from "lucide-react-native";
 
 import { useState } from "react";
 
-import { ScrollView, View } from "react-native";
+import { Image, Modal, ScrollView, View } from "react-native";
+
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { StyleSheet } from "react-native-unistyles";
 
@@ -12,7 +21,7 @@ import {
   AppCard,
   AppDialog,
   AppIcon,
-  AppImage,
+  AppIconButton,
   AppInline,
   AppPressable,
   AppStack,
@@ -28,8 +37,11 @@ export interface TicketMediaStripProps {
 const MAX_VISIBLE_MEDIA = 4;
 
 export function TicketMediaStrip({ medias }: TicketMediaStripProps) {
-  console.log("las medias son: ", medias);
+  const insets = useSafeAreaInsets();
+
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   if (medias.length === 0) {
     return null;
@@ -44,12 +56,28 @@ export function TicketMediaStrip({ medias }: TicketMediaStripProps) {
 
   const isPreviewOpen = selectedIndex !== null;
 
+  const hasMultipleMedias = medias.length > 1;
+
   const openPreview = (index: number) => {
     setSelectedIndex(index);
   };
 
   const closePreview = () => {
+    setIsFullscreen(false);
+
     setSelectedIndex(null);
+  };
+
+  const openFullscreen = () => {
+    if (!selectedMedia) {
+      return;
+    }
+
+    setIsFullscreen(true);
+  };
+
+  const closeFullscreen = () => {
+    setIsFullscreen(false);
   };
 
   const goPrevious = () => {
@@ -72,8 +100,14 @@ export function TicketMediaStrip({ medias }: TicketMediaStripProps) {
     });
   };
 
+  const currentPosition = selectedIndex !== null ? selectedIndex + 1 : 0;
+
   return (
     <>
+      {/* ===================================================
+          STRIP
+         =================================================== */}
+
       <AppCard variant="outlined" radius="md" padding="sm">
         <AppStack gap="sm">
           <AppInline gap="xs" align="center" justify="space-between">
@@ -85,13 +119,8 @@ export function TicketMediaStrip({ medias }: TicketMediaStripProps) {
               </AppText>
             </AppInline>
 
-            <AppBadge
-              size="sm"
-              tone="info"
-              variant="soft"
-              accessibilityLabel={`${medias.length} adjuntos`}
-            >
-              {medias.length}
+            <AppBadge size="sm" tone="neutral" variant="soft">
+              {`${currentPosition} / ${medias.length}`}
             </AppBadge>
           </AppInline>
 
@@ -115,14 +144,13 @@ export function TicketMediaStrip({ medias }: TicketMediaStripProps) {
                 style={styles.mediaButton}
                 onPress={() => openPreview(index)}
               >
-                <AppImage
-                  source={media.cdnUrl}
-                  decorative
-                  radius="md"
+                <Image
+                  source={{
+                    uri: media.cdnUrl,
+                  }}
+                  resizeMode="cover"
+                  accessible={false}
                   style={styles.thumbnail}
-                  contentFit="cover"
-                  loading="eager"
-                  recyclingKey={String(media.id)}
                 />
               </AppPressable>
             ))}
@@ -148,6 +176,10 @@ export function TicketMediaStrip({ medias }: TicketMediaStripProps) {
         </AppStack>
       </AppCard>
 
+      {/* ===================================================
+          PREVIEW
+         =================================================== */}
+
       <AppDialog
         open={isPreviewOpen}
         onOpenChange={(open) => {
@@ -158,57 +190,97 @@ export function TicketMediaStrip({ medias }: TicketMediaStripProps) {
         title="Adjuntos del ticket"
         description={
           selectedIndex !== null
-            ? `Imagen ${selectedIndex + 1} de ${medias.length}`
+            ? `Imagen ${currentPosition} de ${medias.length}`
             : undefined
         }
         icon={ImageIcon}
         size="lg"
         showCloseButton
+        dismissable
+        scrollable
         closeAccessibilityLabel="Cerrar vista previa"
         contentStyle={styles.dialogContent}
         actions={
-          medias.length > 1 ? (
-            <AppInline gap="sm" align="center">
-              <AppButton
-                size="sm"
-                variant="outlined"
-                tone="neutral"
-                leadingIcon={ChevronLeft}
-                fullWidth
-                onPress={goPrevious}
-              >
-                Anterior
-              </AppButton>
+          <AppInline
+            gap="sm"
+            align="center"
+            justify="flex-end"
+            wrap
+            style={styles.previewActions}
+          >
+            <AppButton
+              size="sm"
+              variant="outlined"
+              tone="neutral"
+              leadingIcon={Maximize2}
+              onPress={openFullscreen}
+            >
+              Pantalla completa
+            </AppButton>
 
-              <AppButton
-                size="sm"
-                variant="outlined"
-                tone="neutral"
-                trailingIcon={ChevronRight}
-                fullWidth
-                onPress={goNext}
-              >
-                Siguiente
-              </AppButton>
-            </AppInline>
-          ) : undefined
+            <AppButton
+              size="sm"
+              variant="ghost"
+              tone="neutral"
+              onPress={closePreview}
+            >
+              Cerrar
+            </AppButton>
+          </AppInline>
         }
       >
         {selectedMedia ? (
-          <View style={styles.previewContainer}>
-            <AppImage
-              source={selectedMedia.cdnUrl}
-              accessibilityLabel={
-                selectedMedia.titulo?.trim() ||
-                `Adjunto ${(selectedIndex ?? 0) + 1}`
-              }
-              radius="md"
-              aspectRatio={4 / 3}
-              contentFit="contain"
-              loading="eager"
-              recyclingKey={String(selectedMedia.id)}
-              style={styles.previewImage}
-            />
+          <AppStack gap="md">
+            <View style={styles.previewImageContainer}>
+              <Image
+                source={{
+                  uri: selectedMedia.cdnUrl,
+                }}
+                resizeMode="contain"
+                accessibilityRole="image"
+                accessibilityLabel={
+                  selectedMedia.titulo?.trim() || `Adjunto ${currentPosition}`
+                }
+                style={styles.previewImage}
+              />
+            </View>
+
+            {/* ===============================================
+                CAROUSEL COMPACTO
+               =============================================== */}
+
+            {hasMultipleMedias ? (
+              <AppInline
+                gap="md"
+                align="center"
+                justify="center"
+                style={styles.carouselControls}
+              >
+                <AppIconButton
+                  icon={ChevronLeft}
+                  size="sm"
+                  variant="outlined"
+                  tone="neutral"
+                  interaction="subtle"
+                  accessibilityLabel="Ver imagen anterior"
+                  onPress={goPrevious}
+                />
+
+                <AppBadge size="sm" tone="neutral" variant="soft">
+                  {`${currentPosition} / ${medias.length}`}
+                </AppBadge>
+
+                <AppIconButton
+                  icon={ChevronRight}
+                  size="sm"
+                  variant="outlined"
+                  tone="neutral"
+                  interaction="subtle"
+                  accessibilityLabel="Ver imagen siguiente"
+                  onPress={goNext}
+                />
+              </AppInline>
+            ) : null}
 
             {selectedMedia.titulo || selectedMedia.descripcion ? (
               <AppStack gap="xs">
@@ -225,13 +297,131 @@ export function TicketMediaStrip({ medias }: TicketMediaStripProps) {
                 ) : null}
               </AppStack>
             ) : null}
-          </View>
+          </AppStack>
         ) : (
           <AppText variant="bodyMedium" tone="secondary" align="center">
             No se pudo cargar el adjunto.
           </AppText>
         )}
       </AppDialog>
+
+      {/* ===================================================
+          FULLSCREEN
+         =================================================== */}
+
+      <Modal
+        visible={isFullscreen}
+        transparent={false}
+        animationType="fade"
+        presentationStyle="fullScreen"
+        hardwareAccelerated
+        statusBarTranslucent
+        navigationBarTranslucent
+        onRequestClose={closeFullscreen}
+      >
+        <View
+          style={[
+            styles.fullscreenRoot,
+            {
+              paddingTop: insets.top,
+
+              paddingRight: insets.right,
+
+              paddingBottom: insets.bottom,
+
+              paddingLeft: insets.left,
+            },
+          ]}
+        >
+          {/* TOP BAR */}
+
+          <AppInline
+            gap="md"
+            align="center"
+            justify="space-between"
+            style={styles.fullscreenHeader}
+          >
+            <AppBadge size="sm" tone="neutral" variant="soft">
+              {`${currentPosition} / ${medias.length}`}
+            </AppBadge>
+
+            <AppInline gap="xs" align="center">
+              <AppIconButton
+                icon={Minimize2}
+                size="sm"
+                variant="ghost"
+                tone="neutral"
+                interaction="subtle"
+                accessibilityLabel="Salir de pantalla completa"
+                onPress={closeFullscreen}
+              />
+
+              <AppIconButton
+                icon={X}
+                size="sm"
+                variant="ghost"
+                tone="neutral"
+                interaction="subtle"
+                accessibilityLabel="Cerrar visor de imágenes"
+                onPress={closePreview}
+              />
+            </AppInline>
+          </AppInline>
+
+          {/* IMAGE */}
+
+          <View style={styles.fullscreenStage}>
+            {selectedMedia ? (
+              <Image
+                source={{
+                  uri: selectedMedia.cdnUrl,
+                }}
+                resizeMode="contain"
+                accessibilityRole="image"
+                accessibilityLabel={
+                  selectedMedia.titulo?.trim() || `Adjunto ${currentPosition}`
+                }
+                style={styles.fullscreenImage}
+              />
+            ) : null}
+          </View>
+
+          {/* BOTTOM CAROUSEL */}
+
+          {hasMultipleMedias ? (
+            <AppInline
+              gap="lg"
+              align="center"
+              justify="center"
+              style={styles.fullscreenControls}
+            >
+              <AppIconButton
+                icon={ChevronLeft}
+                size="sm"
+                variant="outlined"
+                tone="neutral"
+                interaction="subtle"
+                accessibilityLabel="Ver imagen anterior"
+                onPress={goPrevious}
+              />
+
+              <AppText variant="bodySmall" tone="secondary" weight="medium">
+                {currentPosition} de {medias.length}
+              </AppText>
+
+              <AppIconButton
+                icon={ChevronRight}
+                size="sm"
+                variant="outlined"
+                tone="neutral"
+                interaction="subtle"
+                accessibilityLabel="Ver imagen siguiente"
+                onPress={goNext}
+              />
+            </AppInline>
+          ) : null}
+        </View>
+      </Modal>
     </>
   );
 }
@@ -239,29 +429,50 @@ export function TicketMediaStrip({ medias }: TicketMediaStripProps) {
 const styles = StyleSheet.create((theme) => ({
   mediaRow: {
     gap: theme.spacing.xs,
+
     paddingVertical: theme.spacing.xs,
+  },
+
+  previewActions: {
+    paddingTop: theme.spacing.md,
   },
 
   mediaButton: {
     width: 64,
     height: 64,
+
     flexShrink: 0,
+
+    overflow: "hidden",
+
+    borderRadius: theme.radius.md,
+
+    backgroundColor: theme.colors.surfaceSecondary,
   },
 
   thumbnail: {
-    width: 64,
-    height: 64,
+    width: "100%",
+    height: "100%",
   },
 
   extraButton: {
     width: 64,
     height: 64,
+
     flexShrink: 0,
+
     alignItems: "center",
+
     justifyContent: "center",
+
     borderWidth: 1,
+
     borderStyle: "dashed",
+
     borderColor: theme.colors.border,
+
+    borderRadius: theme.radius.md,
+
     backgroundColor: theme.colors.surfaceSecondary,
   },
 
@@ -269,12 +480,82 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing.md,
   },
 
-  previewContainer: {
-    gap: theme.spacing.md,
+  previewImageContainer: {
+    width: "100%",
+
+    aspectRatio: 4 / 3,
+
+    overflow: "hidden",
+
+    borderRadius: theme.radius.md,
+
+    backgroundColor: theme.colors.surfaceSecondary,
   },
 
   previewImage: {
     width: "100%",
-    backgroundColor: theme.colors.surfaceSecondary,
+
+    height: "100%",
+  },
+
+  carouselControls: {
+    /*
+     * Evita que las flechas queden
+     * pegadas al borde inferior
+     * de la imagen.
+     */
+    marginTop: theme.spacing.sm,
+
+    marginBottom: theme.spacing.xs,
+  },
+
+  /*
+   * =====================================================
+   * FULLSCREEN
+   * =====================================================
+   */
+
+  fullscreenRoot: {
+    flex: 1,
+
+    backgroundColor: theme.colors.background,
+  },
+
+  fullscreenHeader: {
+    flexShrink: 0,
+
+    paddingHorizontal: theme.spacing.md,
+
+    paddingVertical: theme.spacing.sm,
+  },
+
+  fullscreenStage: {
+    flex: 1,
+
+    minHeight: 0,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    paddingHorizontal: theme.spacing.sm,
+
+    paddingVertical: theme.spacing.sm,
+  },
+
+  fullscreenImage: {
+    width: "100%",
+
+    height: "100%",
+  },
+
+  fullscreenControls: {
+    flexShrink: 0,
+
+    paddingTop: theme.spacing.md,
+
+    paddingHorizontal: theme.spacing.md,
+
+    paddingBottom: theme.spacing.lg,
   },
 }));
