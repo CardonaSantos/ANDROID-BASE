@@ -1,4 +1,4 @@
-import { LogOut, RefreshCw } from "lucide-react-native";
+import { RefreshCw } from "lucide-react-native";
 
 import { useRouter } from "expo-router";
 
@@ -105,10 +105,6 @@ export function TechnicianDashboardScreen() {
 
         <AppInline gap="md" align="center" justify="space-between" wrap>
           <AppStack gap="xs" flex>
-            <AppText variant="headlineSmall" weight="semibold">
-              Panel técnico
-            </AppText>
-
             <AppText variant="titleMedium" weight="semibold">
               {panel.tecnico.nombre}
             </AppText>
@@ -119,6 +115,7 @@ export function TechnicianDashboardScreen() {
           </AppStack>
 
           <AppButton
+            size="sm"
             variant="outlined"
             tone="neutral"
             leadingIcon={RefreshCw}
@@ -127,7 +124,7 @@ export function TechnicianDashboardScreen() {
               void panelQuery.refetch();
             }}
           >
-            Actualizar
+            Refresh
           </AppButton>
         </AppInline>
 
@@ -197,18 +194,6 @@ export function TechnicianDashboardScreen() {
         {/* ========================================= */}
         {/* LOGOUT */}
         {/* ========================================= */}
-
-        <AppButton
-          variant="outlined"
-          tone="neutral"
-          leadingIcon={LogOut}
-          loading={logoutMutation.isPending}
-          onPress={() => {
-            logoutMutation.mutate();
-          }}
-        >
-          Cerrar sesión
-        </AppButton>
       </AppStack>
     </AppScrollScreen>
   );

@@ -1,10 +1,10 @@
 import "@/design-system/bootstrap";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { View } from "react-native";
 
-import { Slot } from "expo-router";
+import { DarkTheme, DefaultTheme, Slot, ThemeProvider } from "expo-router";
 
 import * as SplashScreen from "expo-splash-screen";
 
@@ -45,6 +45,7 @@ function renderAppCoreError({ error, retry }: AppCoreErrorFallbackProps) {
       description={error.message}
       primaryAction={{
         label: "Retry",
+
         onPress: retry,
       }}
     />
@@ -113,15 +114,57 @@ function AppRoot() {
 
   const isOffline = useIsOffline();
 
+  /*
+   * React Navigation tiene su propio theme.
+   *
+   * Expo Router administra internamente el
+   * NavigationContainer, por lo que debemos
+   * proporcionarle el tema mediante
+   * ThemeProvider.
+   *
+   * No usamos simplemente DarkTheme o
+   * DefaultTheme: conservamos su estructura
+   * y sustituimos sus colores por nuestros
+   * tokens semánticos NOVA.
+   */
+  const navigationTheme = useMemo(() => {
+    const baseTheme = theme.isDark ? DarkTheme : DefaultTheme;
+
+    return {
+      ...baseTheme,
+
+      dark: theme.isDark,
+
+      colors: {
+        ...baseTheme.colors,
+
+        primary: theme.colors.primary,
+
+        background: theme.colors.background,
+
+        card: theme.colors.surface,
+
+        text: theme.colors.text,
+
+        border: theme.colors.border,
+
+        notification: theme.colors.danger,
+      },
+    };
+  }, [theme]);
+
   return (
-    <>
+    <ThemeProvider value={navigationTheme}>
       <StatusBar style={theme.isDark ? "light" : "dark"} />
 
       <View
         style={{
           flex: 1,
+
           minHeight: 0,
+
           width: "100%",
+
           backgroundColor: theme.colors.background,
         }}
       >
@@ -135,13 +178,15 @@ function AppRoot() {
         <View
           style={{
             flex: 1,
+
             minHeight: 0,
+
             width: "100%",
           }}
         >
           <Slot />
         </View>
       </View>
-    </>
+    </ThemeProvider>
   );
 }

@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "my-app",
-    "slug": "my-app",
+    "name": "Nova",
+    "slug": "nova-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/NOVA LOGO-PNG.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/NOVA LOGO-PNG.png"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +22,7 @@
     },
     "web": {
       "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/NOVA LOGO-PNG.png"
     },
     "plugins": [
       "expo-router",

@@ -20,6 +20,10 @@ export const authUserSchema = z.object({
   activo: z.boolean(),
 
   empresaId: z.number().int(),
+
+  avatarUrl: z.string().url().nullable(),
+
+  portadaUrl: z.string().url().nullable(),
 });
 
 export const loginResponseSchema = z.object({

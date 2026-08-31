@@ -1,5 +1,7 @@
 import { LogOut, UserCog } from "lucide-react-native";
 
+import { StyleSheet } from "react-native-unistyles";
+
 import {
   AppMenu,
   AppPressable,
@@ -12,17 +14,14 @@ import { useAuthProfileQuery, useLogoutMutation } from "@/features/auth";
 import { AppUserAvatar } from "./AppUserAvatar";
 
 export interface AppUserMenuProps {
-  /*
-   * Lo dejamos como prop porque la
-   * navegación pertenece al Shell,
-   * no al componente de menú.
-   */
   onProfile: () => void;
 
   /*
-   * Todavía auth/profile no expone
-   * avatarUrl, pero este contrato queda
-   * preparado para cuando exista.
+   * Se conserva temporalmente como fallback
+   * para no romper los consumidores actuales.
+   *
+   * La fuente principal desde ahora es:
+   * authProfile.avatarUrl
    */
   avatarUrl?: string | null;
 }
@@ -47,6 +46,17 @@ export function AppUserMenu({ onProfile, avatarUrl }: AppUserMenuProps) {
   const safeEmail = profile?.correo ?? "Cuenta autenticada";
 
   const roleLabel = formatRoleLabel(profile?.rol);
+
+  /*
+   * El avatar del usuario autenticado
+   * viene ahora directamente de:
+   *
+   * POST /auth/login-user
+   * GET  /auth/profile
+   *
+   * Ambos usan el mismo AuthUser.
+   */
+  const resolvedAvatarUrl = profile?.avatarUrl ?? avatarUrl ?? null;
 
   const profileDescription = roleLabel
     ? `${safeEmail} · ${roleLabel}`
@@ -98,6 +108,7 @@ export function AppUserMenu({ onProfile, avatarUrl }: AppUserMenuProps) {
         items={items}
         anchorPosition="bottom"
         overlayAccessibilityLabel="Cerrar menú de usuario"
+        contentStyle={styles.menuContent}
         anchor={(controls) => (
           <AppPressable
             accessibilityRole="button"
@@ -105,14 +116,19 @@ export function AppUserMenu({ onProfile, avatarUrl }: AppUserMenuProps) {
             accessibilityState={{
               expanded: controls.isOpen,
             }}
+            touchTarget="none"
+            hitSlopPreset="normal"
             interaction="subtle"
             haptic={false}
-            touchTarget="minimum"
-            hitSlopPreset="compact"
             radius="full"
+            style={styles.avatarButton}
             onPress={controls.toggle}
           >
-            <AppUserAvatar name={safeName} avatarUrl={avatarUrl} size="sm" />
+            <AppUserAvatar
+              name={safeName}
+              avatarUrl={resolvedAvatarUrl}
+              size="sm"
+            />
           </AppPressable>
         )}
       />
@@ -131,3 +147,29 @@ export function AppUserMenu({ onProfile, avatarUrl }: AppUserMenuProps) {
     </>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  avatarButton: {
+    width: 36,
+
+    height: 36,
+
+    flexShrink: 0,
+
+    alignItems: "center",
+
+    justifyContent: "center",
+  },
+
+  /*
+   * Paper posiciona el menú respecto
+   * al anchor.
+   *
+   * Añadimos espacio visual únicamente
+   * al menú de usuario para evitar que
+   * parezca pegado al toolbar.
+   */
+  menuContent: {
+    marginTop: theme.spacing.sm,
+  },
+}));

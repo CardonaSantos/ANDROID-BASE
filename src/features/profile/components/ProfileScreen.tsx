@@ -114,46 +114,6 @@ export function ProfileScreen() {
           </AppStack>
         </AppCard>
 
-        {/* ===================================== */}
-        {/* ACCOUNT */}
-        {/* ===================================== */}
-
-        <AppCard variant="tonal" padding="lg">
-          <AppStack gap="lg">
-            <AppStack gap="xs">
-              <AppText variant="titleSmall" weight="semibold">
-                Cuenta
-              </AppText>
-
-              <AppText variant="bodySmall" tone="muted">
-                Información interna asociada a tu sesión.
-              </AppText>
-            </AppStack>
-
-            <AppInline gap="2xl" wrap>
-              <AppStack gap="xxs">
-                <AppText variant="labelSmall" tone="muted">
-                  ID DE USUARIO
-                </AppText>
-
-                <AppText variant="bodyMedium" weight="medium">
-                  {profile.id}
-                </AppText>
-              </AppStack>
-
-              <AppStack gap="xxs">
-                <AppText variant="labelSmall" tone="muted">
-                  EMPRESA
-                </AppText>
-
-                <AppText variant="bodyMedium" weight="medium">
-                  {profile.empresaId}
-                </AppText>
-              </AppStack>
-            </AppInline>
-          </AppStack>
-        </AppCard>
-
         <AppAlert tone="info" title="Configuración de perfil">
           La edición de datos personales se incorporará cuando integremos el
           contrato de actualización de perfil. Esta pantalla actualmente muestra
