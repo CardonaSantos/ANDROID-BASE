@@ -18,8 +18,6 @@ export interface RealtimeInternalState {
   connectedAt: number | null;
 
   disconnectedAt: number | null;
-
-  lastCloseCode: number | null;
 }
 
 export type RealtimeStore = StoreApi<RealtimeInternalState>;
@@ -37,8 +35,6 @@ export function createRealtimeStore(configured = false): RealtimeStore {
     connectedAt: null,
 
     disconnectedAt: null,
-
-    lastCloseCode: null,
   }));
 }
 
@@ -57,7 +53,5 @@ export function toRealtimeSnapshot(
     connectedAt: state.connectedAt,
 
     disconnectedAt: state.disconnectedAt,
-
-    lastCloseCode: state.lastCloseCode,
   };
 }

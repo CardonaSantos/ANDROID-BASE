@@ -2,6 +2,12 @@ import type { AppError } from "@/core/errors";
 
 import type { AccessTokenProvider } from "@/core/session";
 
+/*
+ * =========================================================
+ * STATUS
+ * =========================================================
+ */
+
 export type RealtimeStatus =
   | "disabled"
   | "idle"
@@ -11,13 +17,42 @@ export type RealtimeStatus =
   | "suspended";
 
 export type RealtimeSuspendReason =
-  | "runtime_stopped"
   | "session_unavailable"
   | "offline"
-  | "background"
-  | "transport_unavailable";
+  | "background";
+
+/*
+ * =========================================================
+ * AUTH
+ * =========================================================
+ */
 
 export type RealtimeAuthMode = "none" | "bearer-header";
+
+/*
+ * =========================================================
+ * EVENTS
+ * =========================================================
+ *
+ * Este contrato permanece independiente del transporte.
+ *
+ * Socket.IO:
+ *
+ * socket.emit(
+ *   "tracking:location-updated",
+ *   payload,
+ * )
+ *
+ * se representa internamente como:
+ *
+ * {
+ *   type: "tracking:location-updated",
+ *   payload
+ * }
+ *
+ * Los features no necesitan conocer Socket.IO.
+ * =========================================================
+ */
 
 export interface RealtimeEvent {
   type: string;
@@ -35,6 +70,12 @@ export interface RealtimeOutgoingEvent {
   id?: string;
 }
 
+/*
+ * =========================================================
+ * SNAPSHOT
+ * =========================================================
+ */
+
 export interface RealtimeSnapshot {
   status: RealtimeStatus;
 
@@ -47,29 +88,40 @@ export interface RealtimeSnapshot {
   connectedAt: number | null;
 
   disconnectedAt: number | null;
-
-  lastCloseCode: number | null;
 }
-
-export interface RealtimeCodec {
-  decode(data: unknown): RealtimeEvent;
-
-  encode(event: RealtimeOutgoingEvent): string;
-}
+/*
+ * =========================================================
+ * MANAGER OPTIONS
+ * =========================================================
+ */
 
 export interface CreateRealtimeManagerOptions {
+  /*
+   * Origen HTTP(S) del servidor Socket.IO.
+   *
+   * Ejemplo:
+   *
+   * https://api.example.com
+   *
+   * El manager agrega:
+   *
+   * namespace /ws
+   * path      /socket.io
+   */
   url: string | null;
 
   authMode: RealtimeAuthMode;
 
   tokenProvider?: AccessTokenProvider;
 
-  protocols?: readonly string[];
-
   connectionTimeoutMs?: number;
-
-  codec: RealtimeCodec;
 }
+
+/*
+ * =========================================================
+ * LISTENERS
+ * =========================================================
+ */
 
 export type RealtimeEventListener = (event: RealtimeEvent) => void;
 

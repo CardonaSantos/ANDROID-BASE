@@ -1,15 +1,10 @@
 import type { AppError } from "@/core/errors";
 
-import {
-  REALTIME_CONNECTION_TIMEOUT_MS,
-  REALTIME_NORMAL_CLOSE_CODE,
-} from "./realtime.constants";
+import { io, type Socket } from "socket.io-client";
+
+import { REALTIME_CONNECTION_TIMEOUT_MS } from "./realtime.constants";
 
 import { createRealtimeError, normalizeRealtimeError } from "./realtime.error";
-
-import { getRealtimeReconnectDelay } from "./_internal/realtime.backoff";
-
-import { createWebSocket } from "./_internal/websocket.factory";
 
 import {
   createRealtimeStore,
@@ -26,39 +21,92 @@ import type {
   RealtimeSuspendReason,
 } from "./realtime.types";
 
-const NON_RETRYABLE_CLOSE_CODES = new Set<number>([1000, 1008]);
+/*
+ * =========================================================
+ * SOCKET.IO TRANSPORT
+ * =========================================================
+ *
+ * The server exposes:
+ *
+ *   namespace: /ws
+ *   path:      /socket.io
+ *
+ * Environment configuration only contains the HTTP(S)
+ * origin of the server.
+ * =========================================================
+ */
+
+const SOCKET_IO_NAMESPACE = "/ws";
+
+const SOCKET_IO_PATH = "/socket.io";
+
+const SOCKET_IO_RECONNECTION_DELAY_MS = 500;
+
+const SOCKET_IO_RECONNECTION_DELAY_MAX_MS = 5_000;
+
+/*
+ * =========================================================
+ * HELPERS
+ * =========================================================
+ */
+
+function buildSocketIoUrl(baseUrl: string): string {
+  const normalized = baseUrl.replace(/\/+$/, "");
+
+  return `${normalized}${SOCKET_IO_NAMESPACE}`;
+}
+
+function normalizeBearerToken(token: string): string {
+  return token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+}
+
+/*
+ * =========================================================
+ * MANAGER
+ * =========================================================
+ */
 
 export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
+  /*
+   * codec and protocols are intentionally still part of
+   * CreateRealtimeManagerOptions during this migration.
+   *
+   * Socket.IO no longer needs them.
+   *
+   * We remove those legacy properties in the next cleanup
+   * batch after confirming this transport compiles.
+   */
   const {
     url,
     authMode,
     tokenProvider,
-    codec,
-    protocols = [],
     connectionTimeoutMs = REALTIME_CONNECTION_TIMEOUT_MS,
   } = options;
 
   const store = createRealtimeStore(Boolean(url));
 
-  let socket: WebSocket | null = null;
+  /*
+   * Socket.IO owns its underlying Engine.IO/WebSocket
+   * transport and reconnection lifecycle.
+   *
+   * We keep one Socket instance and explicitly connect /
+   * disconnect it according to our application runtime.
+   */
+  let socket: Socket | null = null;
 
   let desiredConnection = false;
-
-  let transportUnavailable = false;
-
-  let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-
-  let connectionTimer: ReturnType<typeof setTimeout> | null = null;
-
-  let reconnectAttempt = 0;
-
-  let reconnectImmediately = false;
 
   const eventListeners = new Map<string, Set<RealtimeEventListener>>();
 
   const allEventListeners = new Set<RealtimeEventListener>();
 
   const errorListeners = new Set<RealtimeErrorListener>();
+
+  /*
+   * =======================================================
+   * SNAPSHOT
+   * =======================================================
+   */
 
   function getSnapshot(): RealtimeSnapshot {
     return toRealtimeSnapshot(store.getState());
@@ -71,6 +119,12 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
       listener(toRealtimeSnapshot(state));
     });
   }
+
+  /*
+   * =======================================================
+   * EVENT SUBSCRIPTIONS
+   * =======================================================
+   */
 
   function subscribe(
     type: string,
@@ -113,14 +167,20 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
     };
   }
 
+  /*
+   * =======================================================
+   * DISPATCH
+   * =======================================================
+   */
+
   function emitError(error: AppError): void {
     for (const listener of errorListeners) {
       try {
         listener(error);
       } catch {
         /*
-         * A consumer error must
-         * never break realtime.
+         * One observer must never break
+         * the realtime transport.
          */
       }
     }
@@ -135,8 +195,8 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
           listener(event);
         } catch {
           /*
-           * One subscriber must not
-           * break the others.
+           * One feature listener must not
+           * break the remaining listeners.
            */
         }
       }
@@ -147,29 +207,20 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
         listener(event);
       } catch {
         /*
-         * Same isolation policy.
+         * Same isolation policy for
+         * global listeners.
          */
       }
     }
   }
 
-  function clearReconnectTimer(): void {
-    if (reconnectTimer !== null) {
-      clearTimeout(reconnectTimer);
+  /*
+   * =======================================================
+   * AUTH
+   * =======================================================
+   */
 
-      reconnectTimer = null;
-    }
-  }
-
-  function clearConnectionTimer(): void {
-    if (connectionTimer !== null) {
-      clearTimeout(connectionTimer);
-
-      connectionTimer = null;
-    }
-  }
-
-  function buildHeaders(): Record<string, string> {
+  function buildAuth(): Record<string, string> {
     if (authMode === "none") {
       return {};
     }
@@ -183,169 +234,110 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
       );
     }
 
+    /*
+     * CrmGateway.normalizeToken() accepts both:
+     *
+     * token
+     * Bearer token
+     *
+     * We send Bearer consistently with HTTP.
+     */
     return {
-      Authorization: `Bearer ${accessToken}`,
+      token: normalizeBearerToken(accessToken),
     };
   }
 
-  function scheduleReconnect(): void {
-    if (!desiredConnection || transportUnavailable || reconnectTimer !== null) {
-      return;
-    }
-
-    const attempt = reconnectAttempt;
-
-    reconnectAttempt += 1;
-
-    store.setState({
-      status: "reconnecting",
-
-      reconnectAttempt,
-
-      disconnectedAt: Date.now(),
-    });
-
-    const delay = getRealtimeReconnectDelay(attempt);
-
-    reconnectTimer = setTimeout(() => {
-      reconnectTimer = null;
-
-      openSocket(true);
-    }, delay);
+  function refreshSocketAuth(current: Socket): void {
+    current.auth = buildAuth();
   }
 
-  function handleMessage(data: unknown): void {
-    try {
-      const event = codec.decode(data);
+  /*
+   * =======================================================
+   * SOCKET CREATION
+   * =======================================================
+   */
 
-      dispatch(event);
-    } catch (cause) {
-      emitError(
-        normalizeRealtimeError(
-          cause,
-          "REALTIME_INVALID_MESSAGE",
-          "Unable to process realtime message.",
-        ),
-      );
-    }
-  }
-
-  function openSocket(reconnecting: boolean): void {
-    if (!desiredConnection || !url || transportUnavailable) {
-      return;
-    }
-
-    if (
-      socket &&
-      (socket.readyState === WebSocket.CONNECTING ||
-        socket.readyState === WebSocket.OPEN)
-    ) {
-      return;
-    }
-
-    clearReconnectTimer();
-    clearConnectionTimer();
-
-    let headers: Record<string, string>;
-
-    try {
-      headers = buildHeaders();
-    } catch (cause) {
-      const error = normalizeRealtimeError(
-        cause,
+  function createSocket(): Socket {
+    if (!url) {
+      throw createRealtimeError(
         "REALTIME_CONNECTION_FAILED",
-        "Unable to prepare realtime connection.",
+        "Realtime server URL is not configured.",
       );
-
-      emitError(error);
-
-      suspend("session_unavailable");
-
-      return;
     }
 
-    store.setState({
-      status: reconnecting ? "reconnecting" : "connecting",
+    const current = io(buildSocketIoUrl(url), {
+      /*
+       * The Socket.IO client must NOT connect when
+       * constructed.
+       *
+       * Our realtimeRuntime decides when the app may
+       * hold a live socket:
+       *
+       * authenticated + online + foreground.
+       */
+      autoConnect: false,
 
-      suspendReason: null,
+      path: SOCKET_IO_PATH,
+
+      /*
+       * The CRM server already works over WebSocket
+       * transport.
+       *
+       * We intentionally avoid long-polling here.
+       */
+      transports: ["websocket"],
+
+      auth: {},
+
+      reconnection: true,
+
+      reconnectionAttempts: Infinity,
+
+      reconnectionDelay: SOCKET_IO_RECONNECTION_DELAY_MS,
+
+      reconnectionDelayMax: SOCKET_IO_RECONNECTION_DELAY_MAX_MS,
+
+      randomizationFactor: 0.5,
+
+      timeout: connectionTimeoutMs,
     });
 
-    let currentSocket: WebSocket;
+    /*
+     * =====================================================
+     * BUSINESS EVENTS
+     * =====================================================
+     *
+     * Socket.IO already supplies the event name separately
+     * from the payload:
+     *
+     * socket.emit(
+     *   "tracking:location-updated",
+     *   payload,
+     * )
+     *
+     * We adapt that into our existing transport-neutral
+     * RealtimeEvent abstraction.
+     */
 
-    try {
-      currentSocket = createWebSocket({
-        url,
+    current.onAny((type, ...args) => {
+      const payload = args.length <= 1 ? args[0] : args;
 
-        protocols: [...protocols],
-
-        headers,
+      dispatch({
+        type,
+        payload,
       });
-    } catch (cause) {
-      const error = normalizeRealtimeError(
-        cause,
-        "REALTIME_CONNECTION_FAILED",
-        "Unable to create realtime connection.",
-      );
+    });
 
-      emitError(error);
+    /*
+     * =====================================================
+     * CONNECTED
+     * =====================================================
+     */
 
-      if (error.code === "REALTIME_WEB_HEADERS_UNSUPPORTED") {
-        transportUnavailable = true;
-
-        suspend("transport_unavailable");
-
+    current.on("connect", () => {
+      if (socket !== current) {
         return;
       }
-
-      scheduleReconnect();
-
-      return;
-    }
-
-    socket = currentSocket;
-
-    connectionTimer = setTimeout(() => {
-      if (
-        socket !== currentSocket ||
-        currentSocket.readyState !== WebSocket.CONNECTING
-      ) {
-        return;
-      }
-
-      emitError(
-        createRealtimeError(
-          "REALTIME_CONNECTION_TIMEOUT",
-          "Realtime connection timed out.",
-        ),
-      );
-
-      try {
-        currentSocket.close();
-      } catch (cause) {
-        emitError(
-          normalizeRealtimeError(
-            cause,
-            "REALTIME_CONNECTION_FAILED",
-            "Unable to close timed out realtime connection.",
-          ),
-        );
-
-        if (socket === currentSocket) {
-          socket = null;
-        }
-
-        scheduleReconnect();
-      }
-    }, connectionTimeoutMs);
-
-    currentSocket.onopen = () => {
-      if (socket !== currentSocket) {
-        return;
-      }
-
-      clearConnectionTimer();
-
-      reconnectAttempt = 0;
 
       store.setState({
         status: "connected",
@@ -356,72 +348,205 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
 
         connectedAt: Date.now(),
       });
-    };
+    });
 
-    currentSocket.onmessage = (event) => {
-      if (socket !== currentSocket) {
+    /*
+     * =====================================================
+     * INITIAL CONNECTION ERROR
+     * =====================================================
+     */
+
+    current.on("connect_error", (cause) => {
+      if (socket !== current) {
         return;
       }
 
-      handleMessage(event.data);
-    };
+      emitError(
+        normalizeRealtimeError(
+          cause,
+          "REALTIME_CONNECTION_FAILED",
+          "Unable to establish realtime connection.",
+        ),
+      );
 
-    currentSocket.onerror = (event) => {
-      if (socket !== currentSocket) {
+      if (desiredConnection) {
+        store.setState({
+          status: "reconnecting",
+
+          disconnectedAt: Date.now(),
+        });
+      }
+    });
+
+    /*
+     * =====================================================
+     * SERVER ERROR EVENT
+     * =====================================================
+     *
+     * CrmGateway currently emits "error" for cases such as:
+     *
+     * NO_TOKEN
+     * TOKEN_EXPIRED
+     * INVALID_TOKEN
+     */
+
+    current.on("error", (cause) => {
+      if (socket !== current) {
         return;
       }
 
       emitError(
         createRealtimeError(
           "REALTIME_SOCKET_ERROR",
-          "Realtime socket reported an error.",
-          event,
+          "Realtime server reported an error.",
+          cause,
         ),
       );
-    };
+    });
 
-    currentSocket.onclose = (event) => {
-      if (socket !== currentSocket) {
+    /*
+     * =====================================================
+     * DISCONNECT
+     * =====================================================
+     */
+
+    current.on("disconnect", (reason) => {
+      if (socket !== current) {
         return;
       }
 
-      clearConnectionTimer();
-
-      socket = null;
-
       store.setState({
         disconnectedAt: Date.now(),
-
-        lastCloseCode: event.code,
       });
 
+      /*
+       * suspend() and stop() deliberately disconnected
+       * the socket.
+       *
+       * Those methods are responsible for the final
+       * application state.
+       */
       if (!desiredConnection) {
         return;
       }
 
-      if (reconnectImmediately) {
-        reconnectImmediately = false;
-
-        openSocket(true);
-
-        return;
-      }
-
-      if (NON_RETRYABLE_CLOSE_CODES.has(event.code)) {
+      /*
+       * Socket.IO automatically reconnects after
+       * transport failures.
+       *
+       * A server-initiated namespace disconnect does NOT
+       * automatically reconnect.
+       */
+      if (reason === "io server disconnect") {
         store.setState({
           status: "idle",
 
           reconnectAttempt: 0,
         });
 
-        reconnectAttempt = 0;
+        return;
+      }
+
+      store.setState({
+        status: "reconnecting",
+      });
+    });
+
+    /*
+     * =====================================================
+     * SOCKET.IO MANAGER RECONNECTION
+     * =====================================================
+     */
+
+    current.io.on("reconnect_attempt", (attempt) => {
+      if (socket !== current || !desiredConnection) {
+        return;
+      }
+
+      /*
+       * Refresh auth before every reconnection.
+       *
+       * This protects us if the access token rotated
+       * between attempts.
+       */
+      try {
+        refreshSocketAuth(current);
+      } catch (cause) {
+        emitError(
+          normalizeRealtimeError(
+            cause,
+            "REALTIME_CONNECTION_FAILED",
+            "Unable to refresh realtime authentication.",
+          ),
+        );
+
+        suspend("session_unavailable");
 
         return;
       }
 
-      scheduleReconnect();
-    };
+      store.setState({
+        status: "reconnecting",
+
+        reconnectAttempt: attempt,
+
+        disconnectedAt: Date.now(),
+      });
+    });
+
+    current.io.on("reconnect_error", (cause) => {
+      if (socket !== current || !desiredConnection) {
+        return;
+      }
+
+      emitError(
+        normalizeRealtimeError(
+          cause,
+          "REALTIME_CONNECTION_FAILED",
+          "Realtime reconnection attempt failed.",
+        ),
+      );
+    });
+
+    current.io.on("reconnect_failed", () => {
+      if (socket !== current) {
+        return;
+      }
+
+      emitError(
+        createRealtimeError(
+          "REALTIME_CONNECTION_FAILED",
+          "Realtime reconnection attempts were exhausted.",
+        ),
+      );
+
+      store.setState({
+        status: "idle",
+
+        reconnectAttempt: 0,
+
+        disconnectedAt: Date.now(),
+      });
+    });
+
+    return current;
   }
+
+  function ensureSocket(): Socket {
+    if (socket) {
+      return socket;
+    }
+
+    socket = createSocket();
+
+    return socket;
+  }
+
+  /*
+   * =======================================================
+   * RESUME
+   * =======================================================
+   */
 
   function resume(): void {
     if (!url) {
@@ -436,64 +561,77 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
       return;
     }
 
-    if (transportUnavailable) {
-      desiredConnection = false;
-
-      store.setState({
-        status: "suspended",
-
-        suspendReason: "transport_unavailable",
-
-        reconnectAttempt: 0,
-      });
-
-      return;
-    }
-
     desiredConnection = true;
 
-    if (
-      socket?.readyState === WebSocket.OPEN ||
-      socket?.readyState === WebSocket.CONNECTING ||
-      reconnectTimer !== null
-    ) {
+    let current: Socket;
+
+    try {
+      current = ensureSocket();
+
+      refreshSocketAuth(current);
+    } catch (cause) {
+      emitError(
+        normalizeRealtimeError(
+          cause,
+          "REALTIME_CONNECTION_FAILED",
+          "Unable to prepare realtime connection.",
+        ),
+      );
+
+      suspend("session_unavailable");
+
       return;
     }
 
-    openSocket(false);
+    if (current.connected) {
+      return;
+    }
+
+    const currentStatus = store.getState().status;
+
+    if (currentStatus === "connecting" || currentStatus === "reconnecting") {
+      return;
+    }
+
+    store.setState({
+      status: "connecting",
+
+      suspendReason: null,
+    });
+
+    try {
+      current.connect();
+    } catch (cause) {
+      emitError(
+        normalizeRealtimeError(
+          cause,
+          "REALTIME_CONNECTION_FAILED",
+          "Unable to start realtime connection.",
+        ),
+      );
+
+      store.setState({
+        status: "idle",
+
+        disconnectedAt: Date.now(),
+      });
+    }
   }
+
+  /*
+   * =======================================================
+   * SUSPEND
+   * =======================================================
+   */
 
   function suspend(reason: RealtimeSuspendReason): void {
     desiredConnection = false;
 
-    reconnectImmediately = false;
-
-    clearReconnectTimer();
-    clearConnectionTimer();
-
-    reconnectAttempt = 0;
-
-    store.setState({
-      status: url ? "suspended" : "disabled",
-
-      suspendReason: url ? reason : null,
-
-      reconnectAttempt: 0,
-
-      disconnectedAt: socket ? Date.now() : store.getState().disconnectedAt,
-    });
-
     const current = socket;
 
-    socket = null;
-
-    if (
-      current &&
-      (current.readyState === WebSocket.OPEN ||
-        current.readyState === WebSocket.CONNECTING)
-    ) {
+    if (current) {
       try {
-        current.close(REALTIME_NORMAL_CLOSE_CODE, "client_suspend");
+        current.disconnect();
       } catch (cause) {
         emitError(
           normalizeRealtimeError(
@@ -504,33 +642,32 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
         );
       }
     }
+
+    store.setState({
+      status: url ? "suspended" : "disabled",
+
+      suspendReason: url ? reason : null,
+
+      reconnectAttempt: 0,
+
+      disconnectedAt: current ? Date.now() : store.getState().disconnectedAt,
+    });
   }
+
+  /*
+   * =======================================================
+   * STOP
+   * =======================================================
+   */
 
   function stop(): void {
     desiredConnection = false;
 
-    reconnectImmediately = false;
-
-    clearReconnectTimer();
-    clearConnectionTimer();
-
-    reconnectAttempt = 0;
-
-    store.setState({
-      status: url ? "idle" : "disabled",
-
-      suspendReason: null,
-
-      reconnectAttempt: 0,
-    });
-
     const current = socket;
-
-    socket = null;
 
     if (current) {
       try {
-        current.close(REALTIME_NORMAL_CLOSE_CODE, "client_stop");
+        current.disconnect();
       } catch (cause) {
         emitError(
           normalizeRealtimeError(
@@ -541,30 +678,71 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
         );
       }
     }
+
+    store.setState({
+      status: url ? "idle" : "disabled",
+
+      suspendReason: null,
+
+      reconnectAttempt: 0,
+
+      disconnectedAt: current ? Date.now() : store.getState().disconnectedAt,
+    });
   }
 
+  /*
+   * =======================================================
+   * RECONNECT
+   * =======================================================
+   *
+   * realtimeRuntime invokes this when the authenticated
+   * access token changes.
+   * =======================================================
+   */
+
   function reconnect(): void {
-    if (!desiredConnection || !url || transportUnavailable) {
+    if (!desiredConnection || !url) {
       return;
     }
 
-    clearReconnectTimer();
-
-    if (!socket) {
-      openSocket(true);
-
-      return;
-    }
-
-    reconnectImmediately = true;
+    let current: Socket;
 
     try {
-      socket.close(REALTIME_NORMAL_CLOSE_CODE, "client_reconnect");
+      current = ensureSocket();
+
+      refreshSocketAuth(current);
     } catch (cause) {
-      reconnectImmediately = false;
+      emitError(
+        normalizeRealtimeError(
+          cause,
+          "REALTIME_CONNECTION_FAILED",
+          "Unable to prepare realtime reconnection.",
+        ),
+      );
 
-      socket = null;
+      suspend("session_unavailable");
 
+      return;
+    }
+
+    store.setState({
+      status: "reconnecting",
+
+      reconnectAttempt: 0,
+    });
+
+    try {
+      /*
+       * A manual Socket.IO disconnect disables automatic
+       * reconnection for that connection.
+       *
+       * Calling connect() explicitly starts a new connection
+       * immediately with the refreshed auth payload.
+       */
+      current.disconnect();
+
+      current.connect();
+    } catch (cause) {
       emitError(
         normalizeRealtimeError(
           cause,
@@ -573,42 +751,61 @@ export function createRealtimeManager(options: CreateRealtimeManagerOptions) {
         ),
       );
 
-      scheduleReconnect();
+      store.setState({
+        status: "idle",
+
+        disconnectedAt: Date.now(),
+      });
     }
   }
+
+  /*
+   * =======================================================
+   * SEND
+   * =======================================================
+   *
+   * Existing public API:
+   *
+   * realtimeClient.send({
+   *   type: "test:ping",
+   *   payload: {...},
+   * })
+   *
+   * Becomes:
+   *
+   * socket.emit(
+   *   "test:ping",
+   *   payload,
+   * )
+   * =======================================================
+   */
 
   function send(event: RealtimeOutgoingEvent): void {
     const current = socket;
 
-    if (!current || current.readyState !== WebSocket.OPEN) {
+    if (!current || !current.connected) {
       throw createRealtimeError(
         "REALTIME_NOT_CONNECTED",
         "Realtime connection is not available.",
       );
     }
 
-    let serialized: string;
-
     try {
-      serialized = codec.encode(event);
-    } catch (cause) {
-      throw normalizeRealtimeError(
-        cause,
-        "REALTIME_SERIALIZATION_FAILED",
-        "Unable to serialize realtime message.",
-      );
-    }
-
-    try {
-      current.send(serialized);
+      current.emit(event.type, event.payload);
     } catch (cause) {
       throw normalizeRealtimeError(
         cause,
         "REALTIME_SEND_FAILED",
-        "Unable to send realtime message.",
+        "Unable to send realtime event.",
       );
     }
   }
+
+  /*
+   * =======================================================
+   * PUBLIC API
+   * =======================================================
+   */
 
   return Object.freeze({
     getSnapshot,

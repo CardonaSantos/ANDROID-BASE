@@ -1,15 +1,27 @@
 import { AppError, isAppError } from "@/core/errors";
 
+/*
+ * =========================================================
+ * REALTIME ERROR CODES
+ * =========================================================
+ *
+ * Estos errores describen nuestra abstracción realtime,
+ * no detalles internos de Engine.IO / Socket.IO.
+ * =========================================================
+ */
+
 export type RealtimeErrorCode =
   | "REALTIME_NOT_CONNECTED"
   | "REALTIME_ACCESS_TOKEN_MISSING"
   | "REALTIME_CONNECTION_FAILED"
-  | "REALTIME_CONNECTION_TIMEOUT"
   | "REALTIME_SOCKET_ERROR"
-  | "REALTIME_INVALID_MESSAGE"
-  | "REALTIME_SERIALIZATION_FAILED"
-  | "REALTIME_SEND_FAILED"
-  | "REALTIME_WEB_HEADERS_UNSUPPORTED";
+  | "REALTIME_SEND_FAILED";
+
+/*
+ * =========================================================
+ * CREATE
+ * =========================================================
+ */
 
 export function createRealtimeError(
   code: RealtimeErrorCode,
@@ -18,12 +30,22 @@ export function createRealtimeError(
 ): AppError {
   return new AppError({
     kind: "realtime",
+
     source: "realtime",
+
     code,
+
     message,
+
     cause,
   });
 }
+
+/*
+ * =========================================================
+ * NORMALIZE
+ * =========================================================
+ */
 
 export function normalizeRealtimeError(
   cause: unknown,

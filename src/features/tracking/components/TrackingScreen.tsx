@@ -65,7 +65,7 @@ function getTrackingErrorMessage(error: unknown): string {
 
 export function TrackingScreen() {
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
-
+  const [startDialogOpen, setStartDialogOpen] = useState(false);
   const trackingQuery = useTrackingStateQuery();
 
   const startMutation = useStartTrackingMutation();
@@ -347,18 +347,33 @@ export function TrackingScreen() {
               loading={startMutation.isPending}
               loadingAccessibilityLabel="Iniciando jornada"
               onPress={() => {
-                /*
-                 * Si venimos de una jornada terminada,
-                 * quitamos el resumen anterior antes
-                 * de comenzar una nueva.
-                 */
-                finishMutation.reset();
-
-                startMutation.mutate();
+                setStartDialogOpen(true);
               }}
             >
               Iniciar jornada
             </AppButton>
+
+            <AppConfirmDialog
+              open={startDialogOpen}
+              onOpenChange={setStartDialogOpen}
+              title="Iniciar jornada"
+              description="Se registrará tu hora de entrada y la jornada quedará activa."
+              tone="info"
+              confirmTone="primary"
+              confirmLabel="Iniciar jornada"
+              cancelLabel="Cancelar"
+              dismissable
+              onConfirm={async () => {
+                await startMutation.mutateAsync();
+
+                finishMutation.reset();
+              }}
+            >
+              <AppAlert tone="info" title="El seguimiento comenzará">
+                La aplicación intentará iniciar el seguimiento GPS con el perfil
+                y los permisos actuales del dispositivo.
+              </AppAlert>
+            </AppConfirmDialog>
           </>
         )}
       </AppStack>

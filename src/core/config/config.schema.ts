@@ -4,6 +4,12 @@ import { APP_ENVIRONMENTS } from "./config.constants";
 
 const appEnvironmentNameSchema = z.enum(APP_ENVIRONMENTS);
 
+/*
+ * =========================================================
+ * HTTP API
+ * =========================================================
+ */
+
 const httpUrlSchema = z.url().refine(
   (value) => {
     const normalized = value.toLowerCase();
@@ -17,24 +23,52 @@ const httpUrlSchema = z.url().refine(
   },
 );
 
-const websocketUrlSchema = z.url().refine(
+/*
+ * =========================================================
+ * REALTIME / SOCKET.IO SERVER
+ * =========================================================
+ *
+ * Socket.IO does not receive a raw ws:// endpoint here.
+ *
+ * We configure the HTTP(S) origin of the Socket.IO server:
+ *
+ * development:
+ * http://192.168.1.10:3000
+ *
+ * production:
+ * https://api.example.com
+ *
+ * Namespace and Socket.IO path belong to the realtime
+ * transport adapter, not to environment configuration.
+ * =========================================================
+ */
+
+const realtimeServerUrlSchema = z.url().refine(
   (value) => {
     const normalized = value.toLowerCase();
 
-    return normalized.startsWith("ws://") || normalized.startsWith("wss://");
+    return (
+      normalized.startsWith("http://") || normalized.startsWith("https://")
+    );
   },
   {
-    error: "Must use ws:// or wss://",
+    error: "Must use http:// or https://",
   },
 );
 
-const optionalWebsocketUrlSchema = z.preprocess((value) => {
+const optionalRealtimeServerUrlSchema = z.preprocess((value) => {
   if (typeof value === "string" && value.trim() === "") {
     return undefined;
   }
 
   return value;
-}, websocketUrlSchema.optional());
+}, realtimeServerUrlSchema.optional());
+
+/*
+ * =========================================================
+ * ENVIRONMENT
+ * =========================================================
+ */
 
 export const appEnvironmentSchema = z
   .object({
@@ -42,8 +76,13 @@ export const appEnvironmentSchema = z
 
     EXPO_PUBLIC_API_URL: httpUrlSchema,
 
-    EXPO_PUBLIC_REALTIME_URL: optionalWebsocketUrlSchema,
+    EXPO_PUBLIC_REALTIME_URL: optionalRealtimeServerUrlSchema,
   })
+
+  /*
+   * Preview and production HTTP API
+   * must use TLS.
+   */
   .refine(
     (environment) => {
       if (environment.EXPO_PUBLIC_APP_ENV === "development") {
@@ -60,6 +99,11 @@ export const appEnvironmentSchema = z
       path: ["EXPO_PUBLIC_API_URL"],
     },
   )
+
+  /*
+   * The Socket.IO server must also use TLS
+   * outside development.
+   */
   .refine(
     (environment) => {
       if (environment.EXPO_PUBLIC_APP_ENV === "development") {
@@ -72,10 +116,10 @@ export const appEnvironmentSchema = z
         return true;
       }
 
-      return realtimeUrl.toLowerCase().startsWith("wss://");
+      return realtimeUrl.toLowerCase().startsWith("https://");
     },
     {
-      error: "Preview and production environments must use WSS",
+      error: "Preview and production realtime servers must use HTTPS",
 
       path: ["EXPO_PUBLIC_REALTIME_URL"],
     },

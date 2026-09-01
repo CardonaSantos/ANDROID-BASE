@@ -4,8 +4,6 @@ export { realtimeRuntime } from "./realtime.runtime";
 
 export { createRealtimeManager } from "./realtime.manager";
 
-export { jsonRealtimeCodec } from "./realtime.codec";
-
 export {
   useIsRealtimeConnected,
   useRealtimeReconnectAttempt,
@@ -16,7 +14,6 @@ export {
 export type {
   CreateRealtimeManagerOptions,
   RealtimeAuthMode,
-  RealtimeCodec,
   RealtimeEvent,
   RealtimeOutgoingEvent,
   RealtimeSnapshot,

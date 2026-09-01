@@ -1,12 +1,15 @@
-import type {
-  RealtimeFeatureBinding,
-} from "@/core/realtime/realtime-handlers";
+import type { RealtimeFeatureBinding } from "@/core/realtime/realtime-handlers";
 
 /**
- * Add application feature bindings here.
+ * Realtime feature bindings activos en la aplicación.
  *
- * Keep concrete event names and query keys inside their owning feature.
+ * Cada feature es responsable de:
+ *
+ * - definir sus nombres de evento;
+ * - validar el payload recibido;
+ * - decidir cómo actualizar su estado/query cache;
+ * - exponer un binding listo para registrar aquí.
+ *
+ * No colocar lógica de negocio directamente en este archivo.
  */
-export const appRealtimeFeatureBindings:
-  readonly RealtimeFeatureBinding[] =
-    [];
+export const appRealtimeFeatureBindings: readonly RealtimeFeatureBinding[] = [];
