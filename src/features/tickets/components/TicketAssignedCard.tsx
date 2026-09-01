@@ -299,8 +299,8 @@ export function TicketAssignedCard({
 
             <AppButton
               size="md"
-              variant="outlined"
-              tone="neutral"
+              variant="soft"
+              tone="info"
               leadingIcon={Eye}
               fullWidth
               accessibilityLabel={`Ver detalle del ticket ${ticket.id}`}

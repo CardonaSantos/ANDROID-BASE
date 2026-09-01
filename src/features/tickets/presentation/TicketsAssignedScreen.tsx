@@ -156,12 +156,8 @@ export function TicketsAssignedScreen({
           <AppStack gap="lg" style={styles.header}>
             <AppInline gap="md" align="center" justify="space-between" wrap>
               <AppStack gap="xs" flex>
-                <AppText variant="headlineSmall" weight="semibold">
+                <AppText variant="titleMedium" weight="semibold">
                   Mis tickets
-                </AppText>
-
-                <AppText variant="bodySmall" tone="secondary">
-                  Ordenados por prioridad, estado y fecha de apertura.
                 </AppText>
               </AppStack>
 
@@ -177,7 +173,7 @@ export function TicketsAssignedScreen({
                   void ticketsQuery.refetch();
                 }}
               >
-                Actualizar
+                Refresh
               </AppButton>
             </AppInline>
 

@@ -2,7 +2,7 @@ import { FlashList } from "@shopify/flash-list";
 
 import { ClipboardList, RefreshCw } from "lucide-react-native";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Linking, View } from "react-native";
 
@@ -24,9 +24,19 @@ import type { InstallationLocation } from "../api/installations.contracts.api";
 
 import { InstallationAssignedCard } from "../components/list/InstallationAssignedCard";
 
-import { useAssignedInstallationsInfiniteQuery } from "../hooks/installations.hooks";
+import { InstallationsPagination } from "../components/list/InstallationsPagination";
+
+import { useAssignedInstallationsQuery } from "../hooks/installations.hooks";
 
 import { buildInstallationRouteUrl } from "../installations.helpers";
+
+/*
+ * =========================================================
+ * CONSTANTS
+ * =========================================================
+ */
+
+const PAGE_SIZE = 10;
 
 /*
  * =========================================================
@@ -42,12 +52,6 @@ export interface InstallationsAssignedScreenProps {
  * =========================================================
  * PHONE
  * =========================================================
- *
- * Por ahora la bandeja solo necesita llamada directa.
- *
- * No lo promovemos al Design System porque es comportamiento
- * de aplicación, no presentación.
- * =========================================================
  */
 
 function normalizePhoneForCall(phone: string): string | null {
@@ -57,10 +61,6 @@ function normalizePhoneForCall(phone: string): string | null {
     return null;
   }
 
-  /*
-   * Si el servidor ya entrega código de Guatemala,
-   * evitamos duplicarlo.
-   */
   if (cleaned.startsWith("+502")) {
     return cleaned;
   }
@@ -81,6 +81,20 @@ function normalizePhoneForCall(phone: string): string | null {
 export function InstallationsAssignedScreen({
   onOpenDetails,
 }: InstallationsAssignedScreenProps) {
+  /*
+   * =======================================================
+   * PAGINATION STATE
+   * =======================================================
+   */
+
+  const [page, setPage] = useState(1);
+
+  /*
+   * =======================================================
+   * FEEDBACK
+   * =======================================================
+   */
+
   const [feedback, setFeedback] = useState<{
     message: string;
 
@@ -92,14 +106,20 @@ export function InstallationsAssignedScreen({
    * QUERY
    * =======================================================
    *
-   * Primera versión:
-   * sin filtros visibles todavía.
+   * La página ahora es explícita.
    *
-   * TanStack administra pageParam internamente.
+   * GET /mis-asignadas
+   *
+   * ?page=1
+   * &limit=10
    * =======================================================
    */
 
-  const installationsQuery = useAssignedInstallationsInfiniteQuery();
+  const installationsQuery = useAssignedInstallationsQuery({
+    page,
+
+    limit: PAGE_SIZE,
+  });
 
   /*
    * =======================================================
@@ -107,17 +127,28 @@ export function InstallationsAssignedScreen({
    * =======================================================
    */
 
-  const installations = useMemo(
-    () => installationsQuery.data?.pages.flatMap((page) => page.data) ?? [],
-    [installationsQuery.data],
-  );
+  const installations = installationsQuery.data?.data ?? [];
 
-  const total =
-    installationsQuery.data?.pages[0]?.meta.total ?? installations.length;
+  const meta = installationsQuery.data?.meta;
+
+  const total = meta?.total ?? 0;
+
+  /*
+   * keepPreviousData mantiene la página anterior
+   * mientras llega la nueva.
+   *
+   * isPlaceholderData nos permite distinguir ese
+   * cambio de página de un refresh normal.
+   */
+  const isChangingPage =
+    installationsQuery.isPlaceholderData && installationsQuery.isFetching;
+
+  const isRefreshing =
+    installationsQuery.isRefetching && !installationsQuery.isPlaceholderData;
 
   /*
    * =======================================================
-   * PLATFORM ACTIONS
+   * CALL
    * =======================================================
    */
 
@@ -127,6 +158,7 @@ export function InstallationsAssignedScreen({
     if (!normalized) {
       setFeedback({
         message: "El teléfono no es válido.",
+
         tone: "danger",
       });
 
@@ -141,6 +173,7 @@ export function InstallationsAssignedScreen({
       if (!supported) {
         setFeedback({
           message: "Este dispositivo no puede realizar llamadas.",
+
           tone: "danger",
         });
 
@@ -151,10 +184,17 @@ export function InstallationsAssignedScreen({
     } catch {
       setFeedback({
         message: "No se pudo abrir la aplicación de llamadas.",
+
         tone: "danger",
       });
     }
   };
+
+  /*
+   * =======================================================
+   * ROUTE
+   * =======================================================
+   */
 
   const handleOpenRoute = async (location: InstallationLocation) => {
     const url = buildInstallationRouteUrl(location);
@@ -162,6 +202,7 @@ export function InstallationsAssignedScreen({
     if (!url) {
       setFeedback({
         message: "La instalación no tiene coordenadas válidas.",
+
         tone: "danger",
       });
 
@@ -174,6 +215,7 @@ export function InstallationsAssignedScreen({
       if (!supported) {
         setFeedback({
           message: "No se pudo abrir la ubicación.",
+
           tone: "danger",
         });
 
@@ -184,6 +226,7 @@ export function InstallationsAssignedScreen({
     } catch {
       setFeedback({
         message: "No se pudo abrir la ruta de la instalación.",
+
         tone: "danger",
       });
     }
@@ -191,19 +234,28 @@ export function InstallationsAssignedScreen({
 
   /*
    * =======================================================
-   * PAGINATION
+   * PAGE CHANGE
    * =======================================================
    */
 
-  const handleEndReached = () => {
-    if (
-      !installationsQuery.hasNextPage ||
-      installationsQuery.isFetchingNextPage
-    ) {
+  const handlePageChange = (nextPage: number) => {
+    if (isChangingPage) {
       return;
     }
 
-    void installationsQuery.fetchNextPage();
+    const totalPages = meta?.totalPages ?? 1;
+
+    const normalizedPage = Math.min(
+      Math.max(nextPage, 1),
+
+      Math.max(totalPages, 1),
+    );
+
+    if (normalizedPage === page) {
+      return;
+    }
+
+    setPage(normalizedPage);
   };
 
   /*
@@ -277,6 +329,9 @@ export function InstallationsAssignedScreen({
           />
         )}
         ItemSeparatorComponent={InstallationSeparator}
+        /* ===============================================
+           HEADER
+           =============================================== */
         ListHeaderComponent={
           <AppStack gap="lg" style={styles.header}>
             <AppInline gap="md" align="center" justify="space-between" wrap>
@@ -295,7 +350,8 @@ export function InstallationsAssignedScreen({
                 variant="outlined"
                 tone="neutral"
                 leadingIcon={RefreshCw}
-                loading={installationsQuery.isRefetching}
+                loading={isRefreshing}
+                disabled={isChangingPage}
                 loadingAccessibilityLabel="Actualizando instalaciones"
                 accessibilityLabel="Actualizar instalaciones asignadas"
                 onPress={() => {
@@ -317,6 +373,9 @@ export function InstallationsAssignedScreen({
             </AppInline>
           </AppStack>
         }
+        /* ===============================================
+           EMPTY
+           =============================================== */
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <AppEmptyState
@@ -325,29 +384,39 @@ export function InstallationsAssignedScreen({
             />
           </View>
         }
+        /* ===============================================
+           PAGINATION
+           =============================================== */
         ListFooterComponent={
-          installationsQuery.isFetchingNextPage ? (
-            <View style={styles.loadingMore}>
-              <AppText variant="bodySmall" tone="secondary" align="center">
-                Cargando más instalaciones...
-              </AppText>
+          total > 0 && meta ? (
+            <View style={styles.paginationContainer}>
+              <InstallationsPagination
+                page={page}
+                totalPages={meta.totalPages}
+                total={meta.total}
+                limit={meta.limit}
+                loading={isChangingPage}
+                onPageChange={handlePageChange}
+              />
             </View>
           ) : (
             <View style={styles.footer} />
           )
         }
-        refreshing={
-          installationsQuery.isRefetching &&
-          !installationsQuery.isFetchingNextPage
-        }
+        /* ===============================================
+           REFRESH
+           =============================================== */
+        refreshing={isRefreshing}
         onRefresh={() => {
           void installationsQuery.refetch();
         }}
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={0.35}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
       />
+
+      {/* ===================================================
+          FEEDBACK
+         =================================================== */}
 
       <AppSnackbar
         open={feedback !== null}
@@ -387,11 +456,6 @@ const styles = StyleSheet.create((theme) => ({
     minHeight: 0,
   },
 
-  /*
-   * Igual que en Tickets:
-   * FlashList debe poseer un viewport acotado,
-   * especialmente en Web.
-   */
   list: {
     flex: 1,
 
@@ -414,8 +478,10 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing["2xl"],
   },
 
-  loadingMore: {
-    paddingVertical: theme.spacing.lg,
+  paginationContainer: {
+    paddingTop: theme.spacing.xl,
+
+    paddingBottom: theme.spacing.sm,
   },
 
   footer: {

@@ -17,21 +17,18 @@ import {
  * MUTATION REQUESTS
  * =========================================================
  *
- * Estos tipos representan exactamente los cuerpos HTTP
- * consumidos por los endpoints operativos del servidor.
+ * Android únicamente soporta las operaciones técnicas
+ * incluidas en su flujo de campo:
  *
- * Las fechas viajan como ISO strings.
+ * - iniciar;
+ * - completar.
+ *
+ * Reprogramar y cancelar no forman parte de la app móvil.
  * =========================================================
  */
 
 export interface StartInstallationRequest {
   fechaInicio?: string;
-}
-
-export interface ReprogramInstallationRequest {
-  fechaProgramada: string;
-
-  motivo?: string | null;
 }
 
 export interface CompleteInstallationRequest {
@@ -41,15 +38,14 @@ export interface CompleteInstallationRequest {
 
   fechaFinalizacion?: string;
 
+  /*
+   * El contrato HTTP todavía permite este campo.
+   *
+   * La UI móvil actual no lo utiliza porque completar
+   * la instalación y activar el servicio son operaciones
+   * independientes.
+   */
   activarServicio?: boolean;
-}
-
-export interface CancelInstallationRequest {
-  motivo: string;
-
-  observaciones?: string | null;
-
-  fechaCancelacion?: string;
 }
 
 /*
@@ -161,25 +157,21 @@ export async function getInstallationTechnicalDetail(
  * MUTATIONS
  * =========================================================
  *
- * En estas operaciones no necesitamos consumir el presenter
- * general que retorna el servidor.
+ * Las respuestas de estas operaciones no se mantienen
+ * directamente en caché.
  *
- * Después de una mutación TanStack invalidará:
+ * Después de cada mutación los hooks invalidan:
  *
  * - detalle técnico;
- * - bandeja asignada.
+ * - bandeja de instalaciones asignadas.
  *
- * Por lo tanto volvemos a consultar los endpoints técnicos
- * canónicos en lugar de mantener dos contratos de detalle.
+ * El endpoint técnico vuelve a ser la fuente de verdad.
  * =========================================================
  */
 
 /*
  * =========================================================
  * INICIAR
- * =========================================================
- *
- * POST cliente-instalaciones/iniciar/:id
  * =========================================================
  */
 
@@ -201,35 +193,7 @@ export async function startInstallation(
 
 /*
  * =========================================================
- * REPROGRAMAR
- * =========================================================
- *
- * PATCH cliente-instalaciones/reprogramar/:id
- * =========================================================
- */
-
-export async function reprogramInstallation(
-  installationId: number,
-
-  input: ReprogramInstallationRequest,
-): Promise<void> {
-  await httpClient.request<unknown, ReprogramInstallationRequest>({
-    method: "PATCH",
-
-    path: `cliente-instalaciones/reprogramar/${installationId}`,
-
-    body: input,
-
-    auth: "auto",
-  });
-}
-
-/*
- * =========================================================
  * COMPLETAR
- * =========================================================
- *
- * POST cliente-instalaciones/completar/:id
  * =========================================================
  */
 
@@ -242,31 +206,6 @@ export async function completeInstallation(
     method: "POST",
 
     path: `cliente-instalaciones/completar/${installationId}`,
-
-    body: input,
-
-    auth: "auto",
-  });
-}
-
-/*
- * =========================================================
- * CANCELAR
- * =========================================================
- *
- * POST cliente-instalaciones/cancelar/:id
- * =========================================================
- */
-
-export async function cancelInstallation(
-  installationId: number,
-
-  input: CancelInstallationRequest,
-): Promise<void> {
-  await httpClient.request<unknown, CancelInstallationRequest>({
-    method: "POST",
-
-    path: `cliente-instalaciones/cancelar/${installationId}`,
 
     body: input,
 

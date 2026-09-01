@@ -1,38 +1,26 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import {
-  assignedInstallationsInfiniteQueryOptions,
+  assignedInstallationsQueryOptions,
   installationTechnicalDetailQueryOptions,
-  type AssignedInstallationsFilters,
+  type AssignedInstallationsPageParams,
 } from "../application/installations.query";
 
 /*
  * =========================================================
- * MIS INSTALACIONES ASIGNADAS
- * =========================================================
- *
- * El hook permanece deliberadamente delgado.
- *
- * No:
- * - ordena;
- * - aplana páginas;
- * - filtra nuevamente;
- * - transforma datos para UI.
- *
- * Esas responsabilidades pertenecen a la capa que realmente
- * las necesite.
+ * ASSIGNED INSTALLATIONS
  * =========================================================
  */
 
-export function useAssignedInstallationsInfiniteQuery(
-  filters: AssignedInstallationsFilters = {},
+export function useAssignedInstallationsQuery(
+  params: AssignedInstallationsPageParams,
 ) {
-  return useInfiniteQuery(assignedInstallationsInfiniteQueryOptions(filters));
+  return useQuery(assignedInstallationsQueryOptions(params));
 }
 
 /*
  * =========================================================
- * DETALLE TÉCNICO
+ * TECHNICAL DETAIL
  * =========================================================
  */
 

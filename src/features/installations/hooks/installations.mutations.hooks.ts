@@ -1,9 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
-  cancelInstallationMutationOptions,
   completeInstallationMutationOptions,
-  reprogramInstallationMutationOptions,
   startInstallationMutationOptions,
 } from "../application/installations.mutations";
 
@@ -14,19 +12,18 @@ import { installationsQueryKeys } from "../application/installations.query";
  * CACHE INVALIDATION
  * =========================================================
  *
- * Toda operación sobre una instalación puede modificar:
+ * Android únicamente soporta:
+ *
+ * - iniciar;
+ * - completar.
+ *
+ * Ambas operaciones pueden modificar:
  *
  * - estado;
  * - agenda;
  * - trabajo;
  * - acciones habilitadas;
- * - datos visibles en la bandeja.
- *
- * Por eso actualizamos tanto:
- *
- * detalle técnico
- * +
- * todas las variantes del listado asignado.
+ * - información visible en la bandeja.
  * =========================================================
  */
 
@@ -36,10 +33,21 @@ async function invalidateInstallationAfterMutation(
   installationId: number,
 ) {
   await Promise.all([
+    /*
+     * Detalle técnico actual.
+     */
     queryClient.invalidateQueries({
       queryKey: installationsQueryKeys.detail(installationId),
     }),
 
+    /*
+     * Todas las variantes de la bandeja:
+     *
+     * search
+     * estado
+     * fechas
+     * paginación
+     */
     queryClient.invalidateQueries({
       queryKey: installationsQueryKeys.assigned(),
     }),
@@ -70,28 +78,6 @@ export function useStartInstallationMutation() {
 
 /*
  * =========================================================
- * REPROGRAMAR
- * =========================================================
- */
-
-export function useReprogramInstallationMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    ...reprogramInstallationMutationOptions(),
-
-    onSuccess: async (_response, variables) => {
-      await invalidateInstallationAfterMutation(
-        queryClient,
-
-        variables.installationId,
-      );
-    },
-  });
-}
-
-/*
- * =========================================================
  * COMPLETAR
  * =========================================================
  */
@@ -101,28 +87,6 @@ export function useCompleteInstallationMutation() {
 
   return useMutation({
     ...completeInstallationMutationOptions(),
-
-    onSuccess: async (_response, variables) => {
-      await invalidateInstallationAfterMutation(
-        queryClient,
-
-        variables.installationId,
-      );
-    },
-  });
-}
-
-/*
- * =========================================================
- * CANCELAR
- * =========================================================
- */
-
-export function useCancelInstallationMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    ...cancelInstallationMutationOptions(),
 
     onSuccess: async (_response, variables) => {
       await invalidateInstallationAfterMutation(

@@ -199,7 +199,7 @@ export function InstallationEquipmentSection({
             </AppText>
 
             <AppText variant="bodySmall" tone="secondary">
-              Productos y seriales asociados a esta instalación.
+              Productos y seriales asociados a esta instalación. Próximamente
             </AppText>
           </AppStack>
 

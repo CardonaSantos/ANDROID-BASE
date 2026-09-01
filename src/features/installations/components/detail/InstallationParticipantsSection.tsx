@@ -295,7 +295,14 @@ function CostItem({ label, value, icon }: CostItemProps) {
 export function InstallationCostsSection({
   installation,
 }: InstallationCostsSectionProps) {
+  const plan = installation.servicioInternet?.precio ?? 0;
   const billing = installation.cobro;
+  const total =
+    installation.cobro.costoInstalacion +
+    installation.cobro.costoManoObra +
+    installation.cobro.costoMateriales +
+    installation.cobro.costoOtros +
+    plan;
 
   const hasPendingBalance = billing.pendienteCobrar > 0;
 
@@ -311,11 +318,7 @@ export function InstallationCostsSection({
 
           <AppStack gap="xs" flex>
             <AppText variant="titleMedium" weight="semibold">
-              Costos y cobro
-            </AppText>
-
-            <AppText variant="bodySmall" tone="secondary">
-              Información económica registrada para esta instalación.
+              Costos
             </AppText>
           </AppStack>
         </AppInline>
@@ -354,19 +357,7 @@ export function InstallationCostsSection({
           <AppCard variant="tonal" radius="md" padding="md">
             <AppStack gap="xs">
               <AppText variant="bodySmall" tone="secondary" weight="medium">
-                Cobrado al cliente
-              </AppText>
-
-              <AppText variant="titleMedium" weight="semibold" tone="success">
-                {formatInstallationMoney(billing.montoCobradoCliente)}
-              </AppText>
-            </AppStack>
-          </AppCard>
-
-          <AppCard variant="tonal" radius="md" padding="md">
-            <AppStack gap="xs">
-              <AppText variant="bodySmall" tone="secondary" weight="medium">
-                Pendiente de cobro
+                Total
               </AppText>
 
               <AppText
@@ -374,38 +365,11 @@ export function InstallationCostsSection({
                 weight="semibold"
                 tone={hasPendingBalance ? "warning" : "success"}
               >
-                {formatInstallationMoney(billing.pendienteCobrar)}
+                {formatInstallationMoney(total)}
               </AppText>
             </AppStack>
           </AppCard>
         </AppGrid>
-
-        {/* ===============================================
-            ESTADO VISUAL
-           =============================================== */}
-
-        <AppCard variant="outlined" radius="md" padding="sm">
-          <AppInline gap="sm" align="center">
-            <AppIcon
-              icon={Banknote}
-              size="sm"
-              tone={hasPendingBalance ? "warning" : "success"}
-              decorative
-            />
-
-            <AppText
-              variant="bodySmall"
-              tone="secondary"
-              style={{
-                flex: 1,
-              }}
-            >
-              {hasPendingBalance
-                ? "La instalación todavía registra un monto pendiente de cobro."
-                : "No hay saldo pendiente de cobro registrado."}
-            </AppText>
-          </AppInline>
-        </AppCard>
 
         {/* ===============================================
             NOTAS

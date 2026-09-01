@@ -1,22 +1,15 @@
 import {
   Activity,
+  Eye,
   Globe,
   KeyRound,
   Network,
   Router,
-  Wifi,
+  Server,
 } from "lucide-react-native";
-
-import {
-  AppBadge,
-  AppCard,
-  AppDivider,
-  AppGrid,
-  AppIcon,
-  AppInline,
-  AppStack,
-  AppText,
-} from "@/design-system";
+import { useState } from "react";
+import { View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 
 import type {
   InstallationTechnicalAccess,
@@ -28,97 +21,104 @@ import {
   formatInstallationDate,
 } from "../../installations.helpers";
 
+import { RevealPppoeCredentialsDialog } from "../actions/RevealPppoeCredentialsDialog";
+
+import {
+  AppBadge,
+  AppButton,
+  AppCard,
+  AppDivider,
+  AppIcon,
+  AppInline,
+  AppStack,
+  AppText,
+} from "@/design-system";
+
 export interface InstallationAccessSectionProps {
   installation: InstallationTechnicalDetail;
 }
-
-/*
- * =========================================================
- * SMALL VALUE
- * =========================================================
- */
 
 interface TechnicalValueProps {
   label: string;
 
   value: string | number | null | undefined;
+
+  tone?: "primary" | "secondary";
 }
 
-function TechnicalValue({ label, value }: TechnicalValueProps) {
+function TechnicalValue({
+  label,
+  value,
+  tone = "secondary",
+}: TechnicalValueProps) {
   const hasValue =
     value !== null && value !== undefined && String(value).trim().length > 0;
 
   return (
-    <AppStack gap="xs">
-      <AppText variant="bodySmall" tone="secondary" weight="medium">
+    <View style={styles.valueItem}>
+      <AppText variant="labelSmall" tone="default">
         {label}
       </AppText>
 
-      <AppText
-        variant="bodyMedium"
-        weight={hasValue ? "medium" : "regular"}
-        tone={hasValue ? "default" : "secondary"}
-      >
+      <AppText variant="bodySmall" tone={hasValue ? tone : "default"}>
         {hasValue ? String(value) : "Sin dato"}
       </AppText>
-    </AppStack>
+    </View>
   );
 }
 
-/*
- * =========================================================
- * ACCESS CARD
- * =========================================================
- */
+function formatWifiSecurity(hasPassword: boolean | null | undefined) {
+  if (hasPassword === null || hasPassword === undefined) {
+    return null;
+  }
 
-interface AccessCardProps {
-  access: InstallationTechnicalAccess;
+  return hasPassword ? "Con contraseña" : "Sin contraseña";
 }
 
-function AccessCard({ access }: AccessCardProps) {
+function formatEntityId(value: number | null | undefined) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  return `#${value}`;
+}
+
+function InstallationAccessCard({
+  access,
+}: {
+  access: InstallationTechnicalAccess;
+}) {
   const configuration = access.configuracionTecnica;
 
   const pppoe = access.cuentaPppoe;
 
   return (
-    <AppCard variant="tonal" radius="md" padding="md">
+    <AppCard variant="tonal" radius="lg" padding="md">
       <AppStack gap="md">
-        {/* ===============================================
-            ACCESS HEADER
-           =============================================== */}
-
-        <AppInline gap="sm" align="center" justify="space-between" wrap>
-          <AppInline gap="sm" align="center" flex>
-            <AppIcon icon={Network} size="sm" tone="primary" decorative />
+        <AppInline align="center" justify="space-between" gap="sm" wrap>
+          <AppInline align="center" gap="sm" flex>
+            <AppIcon
+              icon={Router}
+              size="sm"
+              tone="primary"
+              accessibilityLabel="Acceso de red"
+            />
 
             <AppStack gap="xs" flex>
-              <AppText variant="bodySmall" tone="secondary">
-                {`Acceso #${access.id}`}
-              </AppText>
+              <AppText variant="titleSmall">Acceso #{access.id}</AppText>
 
-              <AppText variant="titleMedium" weight="semibold">
+              <AppText variant="bodySmall" tone="secondary">
                 {formatEnumLabel(access.tecnologia)}
               </AppText>
             </AppStack>
           </AppInline>
 
-          <AppBadge
-            size="sm"
-            tone="neutral"
-            variant="soft"
-            accessibilityLabel={`Estado del acceso: ${formatEnumLabel(
-              access.estado,
-            )}`}
-          >
+          <AppBadge tone="info" variant="soft" size="sm">
             {formatEnumLabel(access.estado)}
           </AppBadge>
         </AppInline>
 
-        {/* ===============================================
-            ACCESS GENERAL DATA
-           =============================================== */}
-
-        <AppGrid gap="md" minItemWidth={140}>
+        <View style={styles.valueGrid}>
           <TechnicalValue
             label="Autenticación"
             value={formatEnumLabel(access.metodoAutenticacion)}
@@ -129,228 +129,207 @@ function AccessCard({ access }: AccessCardProps) {
             value={formatEnumLabel(access.accion)}
           />
 
-          <TechnicalValue label="Vínculo" value={`#${access.vinculoId}`} />
+          <TechnicalValue
+            label="Vínculo"
+            value={formatEntityId(access.vinculoId)}
+          />
 
           <TechnicalValue
-            label="Servicio ID"
-            value={
-              access.servicioInternetId ? `#${access.servicioInternetId}` : null
-            }
+            label="Servicio"
+            value={formatEntityId(access.servicioInternetId)}
           />
-        </AppGrid>
-
-        {/* ===============================================
-            TECHNICAL CONFIGURATION
-           =============================================== */}
+        </View>
 
         {configuration ? (
           <>
             <AppDivider />
 
-            <AppInline gap="sm" align="center">
-              <AppIcon icon={Activity} size="sm" tone="primary" decorative />
+            <AppStack gap="md">
+              <AppInline align="center" gap="sm">
+                <AppIcon
+                  icon={Activity}
+                  size="sm"
+                  tone="primary"
+                  accessibilityLabel="Configuración técnica"
+                />
 
-              <AppText variant="bodyMedium" weight="semibold">
-                Configuración técnica
-              </AppText>
-            </AppInline>
+                <AppStack gap="xs" flex>
+                  <AppText variant="titleSmall">Configuración técnica</AppText>
 
-            <AppGrid gap="md" minItemWidth={140}>
-              <TechnicalValue
-                label="Potencia óptica RX"
-                value={
-                  configuration.potenciaOpticaRxDbm !== null
-                    ? `${configuration.potenciaOpticaRxDbm} dBm`
-                    : null
-                }
-              />
-
-              <TechnicalValue
-                label="Señal inalámbrica"
-                value={
-                  configuration.senalInalambricaDbm !== null
-                    ? `${configuration.senalInalambricaDbm} dBm`
-                    : null
-                }
-              />
-
-              <TechnicalValue label="SSID" value={configuration.ssid} />
-
-              <TechnicalValue
-                label="Seguridad WiFi"
-                value={
-                  configuration.tieneContrasenaWifi
-                    ? "Con contraseña"
-                    : "Sin contraseña"
-                }
-              />
-
-              <TechnicalValue label="Banda" value={configuration.bandaWifi} />
-
-              <TechnicalValue label="Canal" value={configuration.canal} />
-
-              <TechnicalValue
-                label="Ancho de canal"
-                value={
-                  configuration.anchoCanalMhz !== null
-                    ? `${configuration.anchoCanalMhz} MHz`
-                    : null
-                }
-              />
-            </AppGrid>
-
-            {/* ===========================================
-                NETWORK
-               =========================================== */}
-
-            <AppCard variant="outlined" radius="md" padding="sm">
-              <AppStack gap="md">
-                <AppInline gap="sm" align="center">
-                  <AppIcon icon={Globe} size="sm" tone="muted" decorative />
-
-                  <AppText variant="bodyMedium" weight="semibold">
-                    Red
+                  <AppText variant="bodySmall" tone="secondary">
+                    Parámetros registrados durante la instalación.
                   </AppText>
-                </AppInline>
+                </AppStack>
+              </AppInline>
 
-                <AppGrid gap="md" minItemWidth={140}>
-                  <TechnicalValue label="IPv4" value={configuration.red.ipv4} />
+              <View style={styles.valueGrid}>
+                <TechnicalValue
+                  label="Potencia óptica RX"
+                  value={
+                    configuration.potenciaOpticaRxDbm !== null &&
+                    configuration.potenciaOpticaRxDbm !== undefined
+                      ? `${configuration.potenciaOpticaRxDbm} dBm`
+                      : null
+                  }
+                />
 
-                  <TechnicalValue label="IPv6" value={configuration.red.ipv6} />
+                <TechnicalValue
+                  label="Señal inalámbrica"
+                  value={
+                    configuration.senalInalambricaDbm !== null &&
+                    configuration.senalInalambricaDbm !== undefined
+                      ? `${configuration.senalInalambricaDbm} dBm`
+                      : null
+                  }
+                />
 
-                  <TechnicalValue
-                    label="Gateway"
-                    value={configuration.red.gateway}
-                  />
+                <TechnicalValue label="SSID" value={configuration.ssid} />
 
-                  <TechnicalValue
-                    label="DNS primario"
-                    value={configuration.red.dnsPrimario}
-                  />
+                <TechnicalValue
+                  label="Seguridad Wi-Fi"
+                  value={formatWifiSecurity(configuration.tieneContrasenaWifi)}
+                />
 
-                  <TechnicalValue
-                    label="DNS secundario"
-                    value={configuration.red.dnsSecundario}
-                  />
-                </AppGrid>
-              </AppStack>
-            </AppCard>
+                <TechnicalValue label="Banda" value={configuration.bandaWifi} />
 
-            {configuration.observaciones ? (
-              <AppStack gap="xs">
-                <AppText variant="bodySmall" tone="secondary" weight="medium">
-                  Observaciones técnicas
-                </AppText>
+                <TechnicalValue label="Canal" value={configuration.canal} />
 
-                <AppText variant="bodyMedium">
+                <TechnicalValue
+                  label="Ancho de canal"
+                  value={
+                    configuration.anchoCanalMhz !== null &&
+                    configuration.anchoCanalMhz !== undefined
+                      ? `${configuration.anchoCanalMhz} MHz`
+                      : null
+                  }
+                />
+              </View>
+
+              <AppCard variant="outlined" radius="md" padding="sm">
+                <AppStack gap="sm">
+                  <AppInline align="center" gap="sm">
+                    <AppIcon
+                      icon={Network}
+                      size="sm"
+                      tone="secondary"
+                      accessibilityLabel="Red"
+                    />
+
+                    <AppText variant="labelMedium">Red</AppText>
+                  </AppInline>
+
+                  <View style={styles.valueGrid}>
+                    <TechnicalValue
+                      label="IPv4"
+                      value={configuration.red.ipv4}
+                    />
+
+                    <TechnicalValue
+                      label="IPv6"
+                      value={configuration.red.ipv6}
+                    />
+
+                    <TechnicalValue
+                      label="Gateway"
+                      value={configuration.red.gateway}
+                    />
+
+                    <TechnicalValue
+                      label="DNS primario"
+                      value={configuration.red.dnsPrimario}
+                    />
+
+                    <TechnicalValue
+                      label="DNS secundario"
+                      value={configuration.red.dnsSecundario}
+                    />
+                  </View>
+                </AppStack>
+              </AppCard>
+
+              {configuration.observaciones ? (
+                <AppText variant="bodySmall" tone="secondary">
                   {configuration.observaciones}
                 </AppText>
-              </AppStack>
-            ) : null}
+              ) : null}
+            </AppStack>
           </>
-        ) : (
-          <>
-            <AppDivider />
-
-            <AppText variant="bodySmall" tone="secondary">
-              Este acceso todavía no tiene configuración técnica registrada.
-            </AppText>
-          </>
-        )}
-
-        {/* ===============================================
-            PPPOE
-           =============================================== */}
+        ) : null}
 
         {pppoe ? (
           <>
             <AppDivider />
 
-            <AppCard variant="outlined" radius="md" padding="md">
-              <AppStack gap="md">
-                <AppInline gap="sm" align="center" justify="space-between" wrap>
-                  <AppInline gap="sm" align="center" flex>
-                    <AppIcon
-                      icon={KeyRound}
-                      size="sm"
-                      tone="primary"
-                      decorative
-                    />
+            <AppStack gap="md">
+              <AppInline align="center" gap="sm">
+                <AppIcon
+                  icon={KeyRound}
+                  size="sm"
+                  tone="warning"
+                  accessibilityLabel="Cuenta PPPoE"
+                />
 
-                    <AppStack gap="xs" flex>
-                      <AppText variant="bodySmall" tone="secondary">
-                        Cuenta PPPoE
-                      </AppText>
+                <AppStack gap="xs" flex>
+                  <AppText variant="titleSmall">Cuenta PPPoE</AppText>
 
-                      <AppText variant="bodyMedium" weight="semibold">
-                        {pppoe.usuario}
-                      </AppText>
-                    </AppStack>
-                  </AppInline>
+                  <AppText variant="bodySmall" tone="secondary">
+                    Información operativa de autenticación y sincronización.
+                  </AppText>
+                </AppStack>
+              </AppInline>
 
-                  <AppBadge size="sm" tone="neutral" variant="soft">
-                    {formatEnumLabel(pppoe.estado)}
-                  </AppBadge>
-                </AppInline>
+              <View style={styles.valueGrid}>
+                <TechnicalValue label="Usuario" value={pppoe.usuario} />
 
-                <AppGrid gap="md" minItemWidth={150}>
-                  <TechnicalValue label="Perfil" value={pppoe.codigoPerfil} />
+                <TechnicalValue
+                  label="Estado"
+                  value={formatEnumLabel(pppoe.estado)}
+                />
 
-                  <TechnicalValue
-                    label="Perfil ID"
-                    value={`#${pppoe.perfilHomologacionId}`}
-                  />
+                <TechnicalValue label="Perfil" value={pppoe.codigoPerfil} />
 
-                  <TechnicalValue label="Router" value={pppoe.routerNombre} />
+                <TechnicalValue
+                  label="Perfil homologado"
+                  value={formatEntityId(pppoe.perfilHomologacionId)}
+                />
 
-                  <TechnicalValue
-                    label="Router ID"
-                    value={`#${pppoe.mikrotikRouterId}`}
-                  />
-                </AppGrid>
+                <TechnicalValue label="Router" value={pppoe.routerNombre} />
 
-                <AppGrid gap="md" minItemWidth={180}>
-                  <TechnicalValue
-                    label="Generada"
-                    value={formatInstallationDate(pppoe.generadoEn)}
-                  />
+                <TechnicalValue
+                  label="MikroTik"
+                  value={formatEntityId(pppoe.mikrotikRouterId)}
+                />
 
-                  <TechnicalValue
-                    label="Activada"
-                    value={
-                      pppoe.activadoEn
-                        ? formatInstallationDate(pppoe.activadoEn)
-                        : null
-                    }
-                  />
+                <TechnicalValue
+                  label="Generada"
+                  value={formatInstallationDate(pppoe.generadoEn)}
+                />
 
-                  <TechnicalValue
-                    label="Última sincronización"
-                    value={
-                      pppoe.ultimaSincronizacionEn
-                        ? formatInstallationDate(pppoe.ultimaSincronizacionEn)
-                        : null
-                    }
-                  />
-                </AppGrid>
+                <TechnicalValue
+                  label="Activada"
+                  value={formatInstallationDate(pppoe.activadoEn)}
+                />
 
-                {pppoe.ultimoError ? (
-                  <AppCard variant="tonal" radius="md" padding="sm">
-                    <AppStack gap="xs">
-                      <AppText
-                        variant="bodySmall"
-                        tone="danger"
-                        weight="semibold"
-                      >
-                        Último error PPPoE
-                      </AppText>
+                <TechnicalValue
+                  label="Última sincronización"
+                  value={formatInstallationDate(pppoe.ultimaSincronizacionEn)}
+                />
+              </View>
 
-                      <AppText variant="bodySmall">{pppoe.ultimoError}</AppText>
-                    </AppStack>
-                  </AppCard>
-                ) : null}
-              </AppStack>
-            </AppCard>
+              {pppoe.ultimoError ? (
+                <AppCard variant="outlined" radius="md" padding="sm">
+                  <AppStack gap="xs">
+                    <AppText variant="labelSmall" tone="danger">
+                      Último error
+                    </AppText>
+
+                    <AppText variant="bodySmall" tone="secondary">
+                      {pppoe.ultimoError}
+                    </AppText>
+                  </AppStack>
+                </AppCard>
+              ) : null}
+            </AppStack>
           </>
         ) : null}
       </AppStack>
@@ -358,68 +337,158 @@ function AccessCard({ access }: AccessCardProps) {
   );
 }
 
-/*
- * =========================================================
- * SECTION
- * =========================================================
- */
-
 export function InstallationAccessSection({
   installation,
 }: InstallationAccessSectionProps) {
-  const accesses = installation.accesos;
+  const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
+
+  const hasPppoe = installation.accesos.some(
+    (access) => access.cuentaPppoe !== null,
+  );
+
+  /*
+   * Autoridad única:
+   *
+   * el servidor decide si esta acción puede ejecutarse.
+   *
+   * No inferimos permisos mediante:
+   *
+   * - estado de instalación;
+   * - estado PPPoE;
+   * - rol local;
+   * - presencia de router;
+   * - ningún state machine del frontend.
+   */
+  const revealAction = installation.acciones.revelarCredenciales;
+
+  if (installation.accesos.length === 0) {
+    return (
+      <AppCard variant="outlined" radius="lg" padding="md">
+        <AppStack align="center" gap="sm">
+          <AppIcon
+            icon={Globe}
+            size="lg"
+            tone="default"
+            accessibilityLabel="Sin accesos técnicos"
+          />
+
+          <AppText variant="titleSmall">Sin accesos técnicos</AppText>
+
+          <AppText variant="bodySmall" tone="secondary" align="center">
+            Esta instalación todavía no tiene accesos de red vinculados.
+          </AppText>
+        </AppStack>
+      </AppCard>
+    );
+  }
 
   return (
-    <AppCard variant="outlined" radius="lg" padding="md">
-      <AppStack gap="md">
-        {/* ===============================================
-            HEADER
-           =============================================== */}
-
-        <AppInline gap="sm" align="center">
-          <AppIcon icon={Router} size="md" tone="primary" decorative />
-
-          <AppStack gap="xs" flex>
-            <AppText variant="titleMedium" weight="semibold">
-              Acceso y red
-            </AppText>
-
-            <AppText variant="bodySmall" tone="secondary">
-              Configuración técnica y acceso asociado al servicio.
-            </AppText>
-          </AppStack>
-
-          {accesses.length > 0 ? (
-            <AppBadge
-              icon={Wifi}
+    <>
+      <AppCard variant="outlined" radius="lg" padding="md">
+        <AppStack gap="md">
+          <AppInline align="center" gap="sm">
+            <AppIcon
+              icon={Server}
               size="sm"
-              tone="info"
-              variant="soft"
-              accessibilityLabel={`${accesses.length} accesos registrados`}
-            >
-              {`${accesses.length}`}
-            </AppBadge>
-          ) : null}
-        </AppInline>
+              tone="primary"
+              accessibilityLabel="Accesos técnicos"
+            />
 
-        {/* ===============================================
-            ACCESSES
-           =============================================== */}
+            <AppStack gap="xs" flex>
+              <AppText variant="titleSmall">Accesos y red</AppText>
 
-        {accesses.length === 0 ? (
-          <AppCard variant="tonal" radius="md" padding="md">
-            <AppText variant="bodyMedium" tone="secondary">
-              Esta instalación todavía no tiene accesos de internet asociados.
-            </AppText>
-          </AppCard>
-        ) : (
+              <AppText variant="bodySmall" tone="secondary">
+                Configuración técnica.
+              </AppText>
+            </AppStack>
+          </AppInline>
+
           <AppStack gap="md">
-            {accesses.map((access) => (
-              <AccessCard key={access.vinculoId} access={access} />
+            {installation.accesos.map((access) => (
+              <InstallationAccessCard key={access.vinculoId} access={access} />
             ))}
           </AppStack>
-        )}
-      </AppStack>
-    </AppCard>
+
+          {hasPppoe ? (
+            <>
+              <AppDivider />
+
+              <AppCard variant="tonal" radius="lg" padding="md">
+                <AppStack gap="md">
+                  <AppInline align="center" gap="sm">
+                    <AppIcon
+                      icon={KeyRound}
+                      size="sm"
+                      tone="warning"
+                      accessibilityLabel="Credenciales PPPoE"
+                    />
+
+                    <AppStack gap="xs" flex>
+                      <AppText variant="titleSmall">Credenciales PPPoE</AppText>
+
+                      <AppText variant="bodySmall" tone="secondary">
+                        Consulta protegida de usuario y contraseña para trabajo
+                        técnico.
+                      </AppText>
+                    </AppStack>
+                  </AppInline>
+
+                  <AppButton
+                    variant="outlined"
+                    tone="warning"
+                    leadingIcon={Eye}
+                    disabled={!revealAction.habilitada}
+                    onPress={() => {
+                      if (!revealAction.habilitada) {
+                        return;
+                      }
+
+                      setCredentialsDialogOpen(true);
+                    }}
+                  >
+                    Revelar credenciales
+                  </AppButton>
+
+                  {!revealAction.habilitada ? (
+                    <AppText variant="bodySmall" tone="default">
+                      {revealAction.motivo?.trim() ||
+                        "El servidor no permite revelar las credenciales en este momento."}
+                    </AppText>
+                  ) : null}
+                </AppStack>
+              </AppCard>
+            </>
+          ) : null}
+        </AppStack>
+      </AppCard>
+
+      {hasPppoe ? (
+        <RevealPppoeCredentialsDialog
+          open={credentialsDialogOpen}
+          installationId={installation.id}
+          canReveal={revealAction.habilitada}
+          disabledReason={revealAction.motivo}
+          onOpenChange={setCredentialsDialogOpen}
+        />
+      ) : null}
+    </>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  valueGrid: {
+    flexDirection: "row",
+
+    flexWrap: "wrap",
+
+    gap: theme.spacing.md,
+  },
+
+  valueItem: {
+    flexGrow: 1,
+
+    flexBasis: 140,
+
+    gap: theme.spacing.xs,
+  },
+}));

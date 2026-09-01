@@ -1,5 +1,7 @@
 import { RefreshCw, Wrench } from "lucide-react-native";
 
+import { useState } from "react";
+
 import { View } from "react-native";
 
 import { StyleSheet } from "react-native-unistyles";
@@ -8,12 +10,20 @@ import {
   AppErrorState,
   AppIconButton,
   AppScrollScreen,
+  AppSnackbar,
   AppStack,
   AppStateView,
   AppTopBar,
 } from "@/design-system";
 
+import { StartInstallationDialog } from "../components/actions/StartInstallationDialog";
+
 import { InstallationAccessSection } from "../components/detail/InstallationAccessSection";
+
+import {
+  InstallationBottomActionBar,
+  type InstallationLifecycleAction,
+} from "../components/detail/InstallationBottomActionBar";
 
 import { InstallationClientSection } from "../components/detail/InstallationClientSection";
 
@@ -36,6 +46,8 @@ import { InstallationWorkSection } from "../components/detail/InstallationWorkSe
 
 import { useInstallationTechnicalDetailQuery } from "../hooks/installations.hooks";
 
+import { useStartInstallationMutation } from "../hooks/installations.mutations.hooks";
+
 /*
  * =========================================================
  * PROPS
@@ -48,6 +60,18 @@ export interface InstallationDetailScreenProps {
   onBack: () => void;
 
   onCopyText: (value: string) => void | Promise<void>;
+
+  /*
+   * Ruta independiente para carga de evidencias.
+   */
+  onAddEvidence: () => void;
+
+  /*
+   * Ruta independiente para completar.
+   *
+   * El detalle no conoce Expo Router.
+   */
+  onCompleteInstallation: () => void;
 }
 
 /*
@@ -60,7 +84,29 @@ export function InstallationDetailScreen({
   installationId,
   onBack,
   onCopyText,
+  onAddEvidence,
+  onCompleteInstallation,
 }: InstallationDetailScreenProps) {
+  /*
+   * =======================================================
+   * UI STATE
+   * =======================================================
+   *
+   * Solo INICIAR sigue siendo una acción modal.
+   *
+   * Completar tiene ahora su propia pantalla.
+   * =======================================================
+   */
+
+  const [pendingAction, setPendingAction] =
+    useState<InstallationLifecycleAction | null>(null);
+
+  const [feedback, setFeedback] = useState<{
+    message: string;
+
+    tone: "success" | "danger";
+  } | null>(null);
+
   /*
    * =======================================================
    * VALIDATION
@@ -74,14 +120,23 @@ export function InstallationDetailScreen({
    * =======================================================
    * QUERY
    * =======================================================
-   *
-   * El query ya contiene su propio `enabled`.
-   *
-   * Por lo tanto un id inválido no produce un request.
-   * =======================================================
    */
 
   const installationQuery = useInstallationTechnicalDetailQuery(installationId);
+
+  /*
+   * =======================================================
+   * MUTATIONS
+   * =======================================================
+   *
+   * Completar ya no se ejecuta desde este screen.
+   * =======================================================
+   */
+
+  const startMutation = useStartInstallationMutation();
+
+  const loadingAction: InstallationLifecycleAction | null =
+    startMutation.isPending ? "start" : null;
 
   /*
    * =======================================================
@@ -205,12 +260,6 @@ export function InstallationDetailScreen({
 
   const installation = installationQuery.data;
 
-  /*
-   * =======================================================
-   * NOT AVAILABLE
-   * =======================================================
-   */
-
   if (!installation) {
     return (
       <View style={styles.root}>
@@ -242,6 +291,128 @@ export function InstallationDetailScreen({
 
   /*
    * =======================================================
+   * START
+   * =======================================================
+   */
+
+  const handleStart = async () => {
+    if (!installation.acciones.iniciar.habilitada) {
+      setFeedback({
+        message:
+          installation.acciones.iniciar.motivo ||
+          "El servidor no permite iniciar esta instalación.",
+
+        tone: "danger",
+      });
+
+      return;
+    }
+
+    try {
+      await startMutation.mutateAsync({
+        installationId: installation.id,
+
+        input: {},
+      });
+
+      setPendingAction(null);
+
+      setFeedback({
+        message: "La instalación fue iniciada correctamente.",
+
+        tone: "success",
+      });
+    } catch (error) {
+      setFeedback({
+        message: "No se pudo iniciar la instalación.",
+
+        tone: "danger",
+      });
+
+      throw error;
+    }
+  };
+
+  /*
+   * =======================================================
+   * EVIDENCE NAVIGATION
+   * =======================================================
+   */
+
+  const handleAddEvidence = () => {
+    if (!installation.acciones.subirEvidencia.habilitada) {
+      setFeedback({
+        message:
+          installation.acciones.subirEvidencia.motivo ||
+          "El servidor no permite agregar evidencias a esta instalación.",
+
+        tone: "danger",
+      });
+
+      return;
+    }
+
+    onAddEvidence();
+  };
+
+  /*
+   * =======================================================
+   * COMPLETE NAVIGATION
+   * =======================================================
+   *
+   * Completar ya NO ejecuta una mutation desde aquí.
+   *
+   * Solamente validamos la acción recibida del servidor
+   * y navegamos al formulario dedicado.
+   * =======================================================
+   */
+
+  const handleCompleteInstallation = () => {
+    if (!installation.acciones.completar.habilitada) {
+      setFeedback({
+        message:
+          installation.acciones.completar.motivo ||
+          "El servidor no permite completar esta instalación.",
+
+        tone: "danger",
+      });
+
+      return;
+    }
+
+    onCompleteInstallation();
+  };
+
+  /*
+   * =======================================================
+   * BOTTOM ACTION REQUEST
+   * =======================================================
+   */
+
+  const handleRequestAction = (action: InstallationLifecycleAction) => {
+    switch (action) {
+      /*
+       * Inicio:
+       * confirmación breve mediante diálogo.
+       */
+      case "start":
+        setPendingAction("start");
+
+        return;
+
+      /*
+       * Completar:
+       * formulario en pantalla independiente.
+       */
+      case "complete":
+        handleCompleteInstallation();
+
+        return;
+    }
+  };
+
+  /*
+   * =======================================================
    * CONTENT
    * =======================================================
    */
@@ -249,7 +420,7 @@ export function InstallationDetailScreen({
   return (
     <View style={styles.root}>
       {/* ===================================================
-          LOCAL TOOLBAR
+          TOOLBAR
          =================================================== */}
 
       <AppTopBar
@@ -269,6 +440,7 @@ export function InstallationDetailScreen({
             accessibilityLabel="Actualizar detalle de la instalación"
             loadingAccessibilityLabel="Actualizando detalle de la instalación"
             loading={installationQuery.isFetching}
+            disabled={startMutation.isPending}
             onPress={() => {
               void installationQuery.refetch();
             }}
@@ -277,7 +449,7 @@ export function InstallationDetailScreen({
       />
 
       {/* ===================================================
-          SCROLLABLE CONTENT
+          CONTENT
          =================================================== */}
 
       <AppScrollScreen
@@ -288,15 +460,7 @@ export function InstallationDetailScreen({
         showsVerticalScrollIndicator={false}
       >
         <AppStack gap="md">
-          {/* ===============================================
-              RESUMEN
-             =============================================== */}
-
           <InstallationHero installation={installation} />
-
-          {/* ===============================================
-              CLIENTE / UBICACIÓN
-             =============================================== */}
 
           <InstallationClientSection
             installation={installation}
@@ -308,37 +472,66 @@ export function InstallationDetailScreen({
             onCopyText={onCopyText}
           />
 
-          {/* ===============================================
-              TRABAJO / SERVICIO
-             =============================================== */}
-
           <InstallationWorkSection installation={installation} />
 
           <InstallationServiceSection installation={installation} />
 
-          {/* ===============================================
-              RED / ACCESOS
-             =============================================== */}
-
           <InstallationAccessSection installation={installation} />
-
-          {/* ===============================================
-              RECURSOS
-             =============================================== */}
 
           <InstallationEquipmentSection installation={installation} />
 
-          <InstallationEvidenceSection installation={installation} />
-
-          {/* ===============================================
-              PERSONAL / COBRO
-             =============================================== */}
+          <InstallationEvidenceSection
+            installation={installation}
+            onAddEvidence={handleAddEvidence}
+          />
 
           <InstallationParticipantsSection installation={installation} />
 
           <InstallationCostsSection installation={installation} />
         </AppStack>
       </AppScrollScreen>
+
+      {/* ===================================================
+          LIFECYCLE BAR
+         =================================================== */}
+
+      <InstallationBottomActionBar
+        actions={installation.acciones}
+        isLoadingAction={loadingAction}
+        onRequestAction={handleRequestAction}
+      />
+
+      {/* ===================================================
+          START CONFIRMATION
+         =================================================== */}
+
+      <StartInstallationDialog
+        open={pendingAction === "start"}
+        installation={installation}
+        loading={startMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingAction(null);
+          }
+        }}
+        onConfirm={handleStart}
+      />
+
+      {/* ===================================================
+          FEEDBACK
+         =================================================== */}
+
+      <AppSnackbar
+        open={feedback !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setFeedback(null);
+          }
+        }}
+        message={feedback?.message ?? ""}
+        tone={feedback?.tone ?? "success"}
+        position="bottom"
+      />
     </View>
   );
 }

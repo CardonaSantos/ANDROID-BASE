@@ -7,7 +7,6 @@ import {
   Phone,
   User,
   Users,
-  WalletCards,
   Wifi,
 } from "lucide-react-native";
 
@@ -65,6 +64,8 @@ export function InstallationAssignedCard({
     miAsignacion,
     conteos,
   } = installation;
+
+  const plan = servicioInternet?.precio ?? 0;
 
   const address = getInstallationAddressText(ubicacion);
 
@@ -267,43 +268,6 @@ export function InstallationAssignedCard({
         {/* ==================================================
             COBRO
            ================================================== */}
-
-        <AppCard variant="tonal" radius="md" padding="sm">
-          <AppInline gap="sm" align="center" justify="space-between">
-            <AppInline gap="sm" align="center" flex>
-              <AppIcon
-                icon={WalletCards}
-                size="sm"
-                tone={cobro.pendienteCobrar > 0 ? "warning" : "success"}
-                decorative
-              />
-
-              <AppStack gap="xs" flex>
-                <AppText variant="bodySmall" tone="secondary">
-                  Pendiente de cobro
-                </AppText>
-
-                <AppText
-                  variant="titleMedium"
-                  weight="semibold"
-                  tone={cobro.pendienteCobrar > 0 ? "warning" : "success"}
-                >
-                  {formatInstallationMoney(cobro.pendienteCobrar)}
-                </AppText>
-              </AppStack>
-            </AppInline>
-
-            <AppStack gap="xs" align="flex-end">
-              <AppText variant="bodySmall" tone="secondary">
-                Cobrado
-              </AppText>
-
-              <AppText variant="bodySmall" weight="semibold">
-                {formatInstallationMoney(cobro.montoCobradoCliente)}
-              </AppText>
-            </AppStack>
-          </AppInline>
-        </AppCard>
 
         {/* ==================================================
             ACCIONES RÁPIDAS

@@ -13,30 +13,18 @@ export default function InstallationDetailRoute() {
 
   /*
    * =======================================================
-   * ROUTE PARAM
-   * =======================================================
-   *
-   * Expo Router entrega parámetros como strings.
-   *
-   * Si es inválido enviamos 0 y la pantalla presenta
-   * explícitamente su estado de identificador inválido.
+   * PARAM
    * =======================================================
    */
 
   const installationId = Number(installationIdParam ?? 0);
 
+  const hasValidInstallationId =
+    Number.isInteger(installationId) && installationId > 0;
+
   /*
    * =======================================================
    * BACK
-   * =======================================================
-   *
-   * Navegación habitual:
-   *
-   * /instalaciones
-   *       ↓
-   * /instalaciones/:id
-   *
-   * En deep link utilizamos /instalaciones como fallback.
    * =======================================================
    */
 
@@ -60,11 +48,59 @@ export default function InstallationDetailRoute() {
     await Clipboard.setStringAsync(value);
   };
 
+  /*
+   * =======================================================
+   * EVIDENCES
+   * =======================================================
+   */
+
+  const handleAddEvidence = () => {
+    if (!hasValidInstallationId) {
+      return;
+    }
+
+    router.push({
+      pathname: "/instalaciones/[instalacionId]/evidencias",
+
+      params: {
+        instalacionId: String(installationId),
+      },
+    });
+  };
+
+  /*
+   * =======================================================
+   * COMPLETE INSTALLATION
+   * =======================================================
+   */
+
+  const handleCompleteInstallation = () => {
+    if (!hasValidInstallationId) {
+      return;
+    }
+
+    router.push({
+      pathname: "/instalaciones/[instalacionId]/completar",
+
+      params: {
+        instalacionId: String(installationId),
+      },
+    });
+  };
+
+  /*
+   * =======================================================
+   * RENDER
+   * =======================================================
+   */
+
   return (
     <InstallationDetailScreen
       installationId={installationId}
       onBack={handleBack}
       onCopyText={handleCopyText}
+      onAddEvidence={handleAddEvidence}
+      onCompleteInstallation={handleCompleteInstallation}
     />
   );
 }

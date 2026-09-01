@@ -4,11 +4,14 @@ import {
   ExternalLink,
   FileText,
   ImageIcon,
+  Maximize2,
+  Plus,
+  X,
 } from "lucide-react-native";
 
 import { useMemo, useState } from "react";
 
-import { Image, Linking, ScrollView, View } from "react-native";
+import { Image, Linking, Modal, ScrollView, View } from "react-native";
 
 import { StyleSheet } from "react-native-unistyles";
 
@@ -52,6 +55,10 @@ const MAX_VISIBLE_IMAGES = 5;
 
 export interface InstallationEvidenceSectionProps {
   installation: InstallationTechnicalDetail;
+
+  uploading?: boolean;
+
+  onAddEvidence?: () => void;
 }
 
 /*
@@ -61,9 +68,9 @@ export interface InstallationEvidenceSectionProps {
  */
 
 function isImageEvidence(evidence: InstallationTechnicalEvidence): boolean {
-  const mimeType = evidence.mimeType?.trim().toLowerCase();
-
-  return Boolean(mimeType?.startsWith("image/"));
+  return Boolean(
+    evidence.url && evidence.mimeType?.toLowerCase().startsWith("image/"),
+  );
 }
 
 function getEvidenceTitle(evidence: InstallationTechnicalEvidence): string {
@@ -78,120 +85,77 @@ function getEvidenceTitle(evidence: InstallationTechnicalEvidence): string {
 
 /*
  * =========================================================
- * SECTION
+ * COMPONENT
  * =========================================================
  */
 
 export function InstallationEvidenceSection({
   installation,
+  uploading = false,
+  onAddEvidence,
 }: InstallationEvidenceSectionProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
-  const [feedback, setFeedback] = useState<{
-    message: string;
+  const [fullscreen, setFullscreen] = useState(false);
 
-    tone: "success" | "danger";
-  } | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   /*
    * =======================================================
-   * ORDER
+   * SERVER ACTION
    * =======================================================
-   *
-   * El servidor expone explícitamente "orden".
-   *
-   * Respetamos ese campo para presentación y utilizamos
-   * id únicamente como desempate estable.
+   */
+
+  const canUpload =
+    installation.acciones.subirEvidencia.habilitada && Boolean(onAddEvidence);
+
+  /*
+   * =======================================================
+   * DATA
    * =======================================================
    */
 
   const evidences = useMemo(
     () =>
-      [...installation.evidencias].sort(
-        (first, second) => first.orden - second.orden || first.id - second.id,
-      ),
+      [...installation.evidencias].sort((left, right) => {
+        const orderDifference = left.orden - right.orden;
+
+        if (orderDifference !== 0) {
+          return orderDifference;
+        }
+
+        return left.id - right.id;
+      }),
+
     [installation.evidencias],
   );
 
   const imageEvidences = useMemo(
-    () =>
-      evidences.filter(
-        (evidence) => Boolean(evidence.url) && isImageEvidence(evidence),
-      ),
+    () => evidences.filter(isImageEvidence),
+
     [evidences],
   );
 
   const fileEvidences = useMemo(
-    () =>
-      evidences.filter(
-        (evidence) => !evidence.url || !isImageEvidence(evidence),
-      ),
+    () => evidences.filter((evidence) => !isImageEvidence(evidence)),
+
     [evidences],
   );
 
   const visibleImages = imageEvidences.slice(0, MAX_VISIBLE_IMAGES);
 
-  const extraImageCount = Math.max(
-    0,
-    imageEvidences.length - visibleImages.length,
-  );
-
   const selectedEvidence =
     selectedIndex !== null ? (imageEvidences[selectedIndex] ?? null) : null;
 
-  const currentPosition = selectedIndex !== null ? selectedIndex + 1 : 0;
-
-  const hasMultipleImages = imageEvidences.length > 1;
-
   /*
    * =======================================================
-   * PREVIEW
+   * ORIGINAL URL
    * =======================================================
    */
 
-  const openPreview = (index: number) => {
-    setSelectedIndex(index);
-  };
-
-  const closePreview = () => {
-    setSelectedIndex(null);
-  };
-
-  const goPrevious = () => {
-    setSelectedIndex((current) => {
-      if (current === null) {
-        return current;
-      }
-
-      return current <= 0 ? imageEvidences.length - 1 : current - 1;
-    });
-  };
-
-  const goNext = () => {
-    setSelectedIndex((current) => {
-      if (current === null) {
-        return current;
-      }
-
-      return current >= imageEvidences.length - 1 ? 0 : current + 1;
-    });
-  };
-
-  /*
-   * =======================================================
-   * OPEN ORIGINAL
-   * =======================================================
-   */
-
-  const openEvidenceUrl = async (evidence: InstallationTechnicalEvidence) => {
-    const url = evidence.url?.trim();
-
+  const handleOpenUrl = async (url: string | null) => {
     if (!url) {
-      setFeedback({
-        message: "La evidencia no tiene un archivo disponible.",
-
-        tone: "danger",
-      });
+      setFeedback("La evidencia no contiene una URL disponible.");
 
       return;
     }
@@ -199,43 +163,55 @@ export function InstallationEvidenceSection({
     try {
       await Linking.openURL(url);
     } catch {
-      setFeedback({
-        message: "No se pudo abrir el archivo de evidencia.",
-
-        tone: "danger",
-      });
+      setFeedback("No se pudo abrir la evidencia.");
     }
   };
 
   /*
    * =======================================================
-   * EMPTY
+   * PREVIEW
    * =======================================================
    */
 
-  if (evidences.length === 0) {
-    return (
-      <AppCard variant="outlined" radius="lg" padding="md">
-        <AppStack gap="md" align="center">
-          <AppIcon icon={ImageIcon} size="lg" tone="muted" decorative />
-
-          <AppStack gap="xs" align="center">
-            <AppText variant="titleMedium" weight="semibold" align="center">
-              Sin evidencias
-            </AppText>
-
-            <AppText variant="bodySmall" tone="secondary" align="center">
-              Esta instalación todavía no tiene evidencias registradas.
-            </AppText>
-          </AppStack>
-        </AppStack>
-      </AppCard>
+  const handleOpenPreview = (evidence: InstallationTechnicalEvidence) => {
+    const index = imageEvidences.findIndex(
+      (current) => current.id === evidence.id,
     );
-  }
+
+    if (index < 0) {
+      return;
+    }
+
+    setSelectedIndex(index);
+  };
+
+  const handleClosePreview = () => {
+    setSelectedIndex(null);
+
+    setFullscreen(false);
+  };
+
+  const handlePrevious = () => {
+    if (selectedIndex === null || imageEvidences.length === 0) {
+      return;
+    }
+
+    setSelectedIndex(
+      (selectedIndex - 1 + imageEvidences.length) % imageEvidences.length,
+    );
+  };
+
+  const handleNext = () => {
+    if (selectedIndex === null || imageEvidences.length === 0) {
+      return;
+    }
+
+    setSelectedIndex((selectedIndex + 1) % imageEvidences.length);
+  };
 
   /*
    * =======================================================
-   * CONTENT
+   * RENDER
    * =======================================================
    */
 
@@ -243,110 +219,134 @@ export function InstallationEvidenceSection({
     <>
       <AppCard variant="outlined" radius="lg" padding="md">
         <AppStack gap="md">
-          {/* ===============================================
+          {/* =============================================
               HEADER
-             =============================================== */}
+             ============================================= */}
 
-          <AppInline gap="sm" align="center" justify="space-between">
-            <AppInline gap="sm" align="center" flex>
+          <AppInline gap="sm" align="center" justify="space-between" wrap>
+            <AppInline gap="sm" align="center">
               <AppIcon icon={ImageIcon} size="md" tone="primary" decorative />
 
-              <AppStack gap="xs" flex>
+              <AppStack gap="xs">
                 <AppText variant="titleMedium" weight="semibold">
                   Evidencias
                 </AppText>
 
                 <AppText variant="bodySmall" tone="secondary">
-                  Fotografías y archivos registrados durante el trabajo.
+                  {`${evidences.length} evidencia${
+                    evidences.length === 1 ? "" : "s"
+                  } registrada${evidences.length === 1 ? "" : "s"}`}
                 </AppText>
               </AppStack>
             </AppInline>
 
-            <AppBadge
-              size="sm"
-              tone="info"
-              variant="soft"
-              accessibilityLabel={`${evidences.length} evidencias registradas`}
-            >
-              {`${evidences.length}`}
-            </AppBadge>
+            {canUpload ? (
+              <AppButton
+                size="sm"
+                variant="solid"
+                tone="primary"
+                leadingIcon={Plus}
+                loading={uploading}
+                disabled={uploading}
+                loadingAccessibilityLabel="Subiendo evidencia"
+                accessibilityLabel="Agregar evidencia a la instalación"
+                onPress={onAddEvidence}
+              >
+                Agregar evidencia
+              </AppButton>
+            ) : null}
           </AppInline>
 
-          {/* ===============================================
-              IMAGE GALLERY
-             =============================================== */}
+          {/* =============================================
+              EMPTY
+             ============================================= */}
+
+          {evidences.length === 0 ? (
+            <AppCard variant="tonal" radius="md" padding="md">
+              <AppStack gap="sm" align="center">
+                <AppIcon icon={ImageIcon} size="lg" tone="muted" decorative />
+
+                <AppText variant="bodyMedium" weight="semibold" align="center">
+                  Sin evidencias
+                </AppText>
+
+                <AppText variant="bodySmall" tone="secondary" align="center">
+                  Todavía no se han registrado archivos o fotografías para esta
+                  instalación.
+                </AppText>
+              </AppStack>
+            </AppCard>
+          ) : null}
+
+          {/* =============================================
+              IMAGES
+             ============================================= */}
 
           {imageEvidences.length > 0 ? (
             <AppStack gap="sm">
-              <AppText variant="bodySmall" tone="secondary" weight="semibold">
-                Imágenes
-              </AppText>
+              <AppInline gap="sm" align="center" justify="space-between">
+                <AppText variant="bodySmall" weight="semibold" tone="secondary">
+                  Fotografías
+                </AppText>
+
+                <AppBadge size="sm" variant="soft" tone="neutral">
+                  {imageEvidences.length}
+                </AppBadge>
+              </AppInline>
 
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.imageRow}
+                contentContainerStyle={styles.thumbnailList}
               >
-                {visibleImages.map((evidence, index) => (
-                  <AppStack
-                    key={evidence.id}
-                    gap="xs"
-                    style={styles.thumbnailItem}
-                  >
-                    <AppPressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Ver evidencia ${index + 1} de ${imageEvidences.length}`}
-                      touchTarget="none"
-                      hitSlopPreset="compact"
-                      interaction="subtle"
-                      haptic="selection"
-                      radius="md"
-                      style={styles.thumbnailButton}
-                      onPress={() => {
-                        openPreview(index);
-                      }}
-                    >
-                      <Image
-                        source={{
-                          uri: evidence.url!,
-                        }}
-                        resizeMode="cover"
-                        accessible={false}
-                        style={styles.thumbnail}
-                      />
-                    </AppPressable>
-
-                    <AppText
-                      variant="bodySmall"
-                      tone="secondary"
-                      numberOfLines={1}
-                      align="center"
-                    >
-                      {formatEnumLabel(evidence.tipo)}
-                    </AppText>
-                  </AppStack>
-                ))}
-
-                {extraImageCount > 0 ? (
+                {visibleImages.map((evidence) => (
                   <AppPressable
+                    key={evidence.id}
                     accessibilityRole="button"
-                    accessibilityLabel={`Ver ${extraImageCount} evidencias adicionales`}
-                    touchTarget="none"
-                    hitSlopPreset="compact"
-                    interaction="subtle"
-                    haptic="selection"
-                    radius="md"
-                    style={styles.extraButton}
+                    accessibilityLabel={`Abrir evidencia ${getEvidenceTitle(
+                      evidence,
+                    )}`}
+                    style={styles.thumbnailItem}
                     onPress={() => {
-                      openPreview(visibleImages.length);
+                      handleOpenPreview(evidence);
                     }}
                   >
-                    <AppText
-                      variant="bodyMedium"
-                      tone="secondary"
-                      weight="bold"
-                    >
-                      {`+${extraImageCount}`}
+                    <Image
+                      source={{
+                        uri: evidence.url!,
+                      }}
+                      resizeMode="cover"
+                      style={styles.thumbnail}
+                      accessibilityRole="image"
+                      accessibilityLabel={getEvidenceTitle(evidence)}
+                    />
+
+                    <View style={styles.thumbnailBadge}>
+                      <AppText variant="labelSmall" numberOfLines={1}>
+                        {formatEnumLabel(evidence.tipo)}
+                      </AppText>
+                    </View>
+                  </AppPressable>
+                ))}
+
+                {imageEvidences.length > MAX_VISIBLE_IMAGES ? (
+                  <AppPressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Abrir más evidencias"
+                    style={styles.moreImages}
+                    onPress={() => {
+                      setSelectedIndex(MAX_VISIBLE_IMAGES);
+                    }}
+                  >
+                    <AppIcon
+                      icon={ImageIcon}
+                      size="md"
+                      tone="primary"
+                      decorative
+                    />
+
+                    <AppText variant="bodySmall" weight="semibold">
+                      {`+${imageEvidences.length - MAX_VISIBLE_IMAGES}`}
                     </AppText>
                   </AppPressable>
                 ) : null}
@@ -354,15 +354,19 @@ export function InstallationEvidenceSection({
             </AppStack>
           ) : null}
 
-          {/* ===============================================
-              FILES / NON IMAGE
-             =============================================== */}
+          {/* =============================================
+              FILES
+             ============================================= */}
 
           {fileEvidences.length > 0 ? (
             <AppStack gap="sm">
-              <AppText variant="bodySmall" tone="secondary" weight="semibold">
-                Otros archivos
-              </AppText>
+              <AppInline gap="sm" align="center">
+                <AppIcon icon={FileText} size="sm" tone="muted" decorative />
+
+                <AppText variant="bodySmall" weight="semibold" tone="secondary">
+                  Archivos
+                </AppText>
+              </AppInline>
 
               {fileEvidences.map((evidence) => (
                 <AppCard
@@ -371,55 +375,51 @@ export function InstallationEvidenceSection({
                   radius="md"
                   padding="sm"
                 >
-                  <AppInline gap="sm" align="center">
-                    <AppIcon
-                      icon={FileText}
-                      size="sm"
-                      tone="muted"
-                      decorative
-                    />
-
+                  <AppInline
+                    gap="sm"
+                    align="center"
+                    justify="space-between"
+                    wrap
+                  >
                     <AppStack gap="xs" flex>
-                      <AppText
-                        variant="bodyMedium"
-                        weight="semibold"
-                        numberOfLines={1}
-                      >
+                      <AppText variant="bodyMedium" weight="semibold">
                         {getEvidenceTitle(evidence)}
                       </AppText>
 
-                      <AppText
-                        variant="bodySmall"
-                        tone="secondary"
-                        numberOfLines={1}
-                      >
-                        {[
-                          formatEnumLabel(evidence.tipo),
-
-                          evidence.mimeType,
-
-                          formatInstallationDate(evidence.creadoEn),
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
+                      <AppText variant="bodySmall" tone="secondary">
+                        {formatEnumLabel(evidence.tipo)}
                       </AppText>
+
+                      {evidence.mimeType ? (
+                        <AppText variant="bodySmall" tone="secondary">
+                          {evidence.mimeType}
+                        </AppText>
+                      ) : null}
+
+                      <AppText variant="bodySmall" tone="secondary">
+                        {formatInstallationDate(evidence.creadoEn)}
+                      </AppText>
+
+                      {evidence.descripcion ? (
+                        <AppText variant="bodySmall" tone="secondary">
+                          {evidence.descripcion}
+                        </AppText>
+                      ) : null}
                     </AppStack>
 
-                    <AppButton
-                      size="sm"
-                      variant="outlined"
-                      tone="neutral"
-                      leadingIcon={ExternalLink}
-                      disabled={!evidence.url}
-                      accessibilityLabel={`Abrir evidencia ${getEvidenceTitle(
-                        evidence,
-                      )}`}
-                      onPress={() => {
-                        void openEvidenceUrl(evidence);
-                      }}
-                    >
-                      Abrir
-                    </AppButton>
+                    {evidence.url ? (
+                      <AppButton
+                        size="sm"
+                        variant="ghost"
+                        tone="primary"
+                        leadingIcon={ExternalLink}
+                        onPress={() => {
+                          void handleOpenUrl(evidence.url);
+                        }}
+                      >
+                        Abrir
+                      </AppButton>
+                    ) : null}
                   </AppInline>
                 </AppCard>
               ))}
@@ -428,143 +428,176 @@ export function InstallationEvidenceSection({
         </AppStack>
       </AppCard>
 
-      {/* ====================================================
+      {/* ===================================================
           IMAGE PREVIEW
-         ==================================================== */}
+         =================================================== */}
 
       <AppDialog
-        open={selectedIndex !== null}
+        open={selectedEvidence !== null}
         onOpenChange={(open) => {
           if (!open) {
-            closePreview();
+            handleClosePreview();
           }
         }}
-        title="Evidencia de instalación"
-        description={
-          selectedEvidence
-            ? `${formatEnumLabel(
-                selectedEvidence.tipo,
-              )} · ${currentPosition} de ${imageEvidences.length}`
-            : undefined
+        title={
+          selectedEvidence ? getEvidenceTitle(selectedEvidence) : "Evidencia"
         }
-        icon={ImageIcon}
+        description={
+          selectedEvidence ? formatEnumLabel(selectedEvidence.tipo) : undefined
+        }
         size="lg"
         showCloseButton
-        dismissable
         scrollable
         closeAccessibilityLabel="Cerrar vista previa"
-        contentStyle={styles.dialogContent}
         actions={
-          <AppInline gap="sm" align="center" justify="flex-end" wrap>
-            {selectedEvidence?.url ? (
-              <AppButton
-                size="sm"
-                variant="outlined"
-                tone="neutral"
-                leadingIcon={ExternalLink}
-                onPress={() => {
-                  void openEvidenceUrl(selectedEvidence);
-                }}
-              >
-                Abrir original
-              </AppButton>
-            ) : null}
-
+          selectedEvidence?.url ? (
             <AppButton
               size="sm"
               variant="ghost"
-              tone="neutral"
-              onPress={closePreview}
+              tone="primary"
+              leadingIcon={ExternalLink}
+              onPress={() => {
+                void handleOpenUrl(selectedEvidence.url);
+              }}
             >
-              Cerrar
+              Abrir original
             </AppButton>
-          </AppInline>
+          ) : undefined
         }
       >
-        {selectedEvidence?.url ? (
+        {selectedEvidence ? (
           <AppStack gap="md">
             <View style={styles.previewImageContainer}>
               <Image
                 source={{
-                  uri: selectedEvidence.url,
+                  uri: selectedEvidence.url!,
                 }}
                 resizeMode="contain"
                 accessibilityRole="image"
                 accessibilityLabel={getEvidenceTitle(selectedEvidence)}
                 style={styles.previewImage}
               />
+
+              <View style={styles.previewToolbar}>
+                <AppIconButton
+                  icon={Maximize2}
+                  size="sm"
+                  variant="soft"
+                  tone="neutral"
+                  accessibilityLabel="Ver evidencia en pantalla completa"
+                  onPress={() => {
+                    setFullscreen(true);
+                  }}
+                />
+              </View>
             </View>
 
-            {/* ===============================================
-                CAROUSEL
-               =============================================== */}
-
-            {hasMultipleImages ? (
-              <AppInline gap="md" align="center" justify="center">
+            {imageEvidences.length > 1 ? (
+              <AppInline gap="sm" align="center" justify="space-between">
                 <AppIconButton
                   icon={ChevronLeft}
                   size="sm"
                   variant="outlined"
                   tone="neutral"
-                  interaction="subtle"
-                  accessibilityLabel="Ver evidencia anterior"
-                  onPress={goPrevious}
+                  accessibilityLabel="Evidencia anterior"
+                  onPress={handlePrevious}
                 />
 
-                <AppBadge size="sm" tone="neutral" variant="soft">
-                  {`${currentPosition} / ${imageEvidences.length}`}
-                </AppBadge>
+                <AppText variant="bodySmall" tone="secondary">
+                  {`${(selectedIndex ?? 0) + 1} de ${imageEvidences.length}`}
+                </AppText>
 
                 <AppIconButton
                   icon={ChevronRight}
                   size="sm"
                   variant="outlined"
                   tone="neutral"
-                  interaction="subtle"
-                  accessibilityLabel="Ver evidencia siguiente"
-                  onPress={goNext}
+                  accessibilityLabel="Evidencia siguiente"
+                  onPress={handleNext}
                 />
               </AppInline>
             ) : null}
 
-            {/* ===============================================
-                METADATA
-               =============================================== */}
+            {selectedEvidence.descripcion ? (
+              <AppText variant="bodySmall" tone="secondary">
+                {selectedEvidence.descripcion}
+              </AppText>
+            ) : null}
 
-            <AppStack gap="sm">
-              <AppInline gap="xs" align="center" wrap>
-                <AppBadge size="sm" tone="info" variant="soft">
-                  {formatEnumLabel(selectedEvidence.tipo)}
-                </AppBadge>
-
-                <AppText variant="bodySmall" tone="secondary">
-                  {formatInstallationDate(selectedEvidence.creadoEn)}
-                </AppText>
-              </AppInline>
-
-              {selectedEvidence.titulo ? (
-                <AppText variant="titleMedium" weight="semibold">
-                  {selectedEvidence.titulo}
-                </AppText>
-              ) : null}
-
-              {selectedEvidence.descripcion ? (
-                <AppText variant="bodyMedium" tone="secondary">
-                  {selectedEvidence.descripcion}
-                </AppText>
-              ) : null}
-            </AppStack>
+            <AppText variant="bodySmall" tone="secondary">
+              {formatInstallationDate(selectedEvidence.creadoEn)}
+            </AppText>
           </AppStack>
-        ) : (
-          <AppText variant="bodyMedium" tone="secondary" align="center">
-            No se pudo cargar la evidencia.
-          </AppText>
-        )}
+        ) : null}
       </AppDialog>
 
-      {/* ====================================================
-          FEEDBACK
-         ==================================================== */}
+      {/* ===================================================
+          FULLSCREEN
+         =================================================== */}
+
+      <Modal
+        visible={fullscreen && selectedEvidence !== null}
+        transparent={false}
+        animationType="fade"
+        onRequestClose={() => {
+          setFullscreen(false);
+        }}
+      >
+        <View style={styles.fullscreenRoot}>
+          {selectedEvidence ? (
+            <>
+              <Image
+                source={{
+                  uri: selectedEvidence.url!,
+                }}
+                resizeMode="contain"
+                accessibilityRole="image"
+                accessibilityLabel={getEvidenceTitle(selectedEvidence)}
+                style={styles.fullscreenImage}
+              />
+
+              <View style={styles.fullscreenClose}>
+                <AppIconButton
+                  icon={X}
+                  size="md"
+                  variant="soft"
+                  tone="neutral"
+                  accessibilityLabel="Cerrar pantalla completa"
+                  onPress={() => {
+                    setFullscreen(false);
+                  }}
+                />
+              </View>
+
+              {imageEvidences.length > 1 ? (
+                <>
+                  <View style={styles.fullscreenPrevious}>
+                    <AppIconButton
+                      icon={ChevronLeft}
+                      size="md"
+                      variant="soft"
+                      tone="neutral"
+                      accessibilityLabel="Evidencia anterior"
+                      onPress={handlePrevious}
+                    />
+                  </View>
+
+                  <View style={styles.fullscreenNext}>
+                    <AppIconButton
+                      icon={ChevronRight}
+                      size="md"
+                      variant="soft"
+                      tone="neutral"
+                      accessibilityLabel="Evidencia siguiente"
+                      onPress={handleNext}
+                    />
+                  </View>
+                </>
+              ) : null}
+            </>
+          ) : null}
+        </View>
+      </Modal>
 
       <AppSnackbar
         open={feedback !== null}
@@ -573,8 +606,8 @@ export function InstallationEvidenceSection({
             setFeedback(null);
           }
         }}
-        message={feedback?.message ?? ""}
-        tone={feedback?.tone ?? "success"}
+        message={feedback ?? ""}
+        tone="danger"
         position="bottom"
       />
     </>
@@ -588,60 +621,44 @@ export function InstallationEvidenceSection({
  */
 
 const styles = StyleSheet.create((theme) => ({
-  imageRow: {
+  thumbnailList: {
     gap: theme.spacing.sm,
-
-    paddingVertical: theme.spacing.xs,
   },
 
   thumbnailItem: {
     width: 92,
 
-    flexShrink: 0,
+    gap: theme.spacing.xs,
   },
 
-  thumbnailButton: {
+  thumbnail: {
     width: 92,
 
     height: 92,
-
-    overflow: "hidden",
 
     borderRadius: theme.radius.md,
 
     backgroundColor: theme.colors.surfaceSecondary,
   },
 
-  thumbnail: {
-    width: "100%",
-
-    height: "100%",
+  thumbnailBadge: {
+    maxWidth: 92,
   },
 
-  extraButton: {
+  moreImages: {
     width: 92,
 
     height: 92,
 
-    flexShrink: 0,
+    borderRadius: theme.radius.md,
 
     alignItems: "center",
 
     justifyContent: "center",
 
-    borderWidth: 1,
-
-    borderStyle: "dashed",
-
-    borderColor: theme.colors.border,
-
-    borderRadius: theme.radius.md,
+    gap: theme.spacing.xs,
 
     backgroundColor: theme.colors.surfaceSecondary,
-  },
-
-  dialogContent: {
-    gap: theme.spacing.md,
   },
 
   previewImageContainer: {
@@ -650,6 +667,8 @@ const styles = StyleSheet.create((theme) => ({
     aspectRatio: 4 / 3,
 
     overflow: "hidden",
+
+    position: "relative",
 
     borderRadius: theme.radius.md,
 
@@ -660,5 +679,51 @@ const styles = StyleSheet.create((theme) => ({
     width: "100%",
 
     height: "100%",
+  },
+
+  previewToolbar: {
+    position: "absolute",
+
+    top: theme.spacing.sm,
+
+    right: theme.spacing.sm,
+  },
+
+  fullscreenRoot: {
+    flex: 1,
+
+    position: "relative",
+
+    backgroundColor: theme.colors.background,
+  },
+
+  fullscreenImage: {
+    width: "100%",
+
+    height: "100%",
+  },
+
+  fullscreenClose: {
+    position: "absolute",
+
+    top: theme.spacing.lg,
+
+    right: theme.spacing.md,
+  },
+
+  fullscreenPrevious: {
+    position: "absolute",
+
+    left: theme.spacing.md,
+
+    top: "50%",
+  },
+
+  fullscreenNext: {
+    position: "absolute",
+
+    right: theme.spacing.md,
+
+    top: "50%",
   },
 }));

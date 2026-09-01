@@ -1,9 +1,4 @@
-import {
-  CalendarClock,
-  CheckCircle2,
-  PlayCircle,
-  XCircle,
-} from "lucide-react-native";
+import { CheckCircle2, PlayCircle } from "lucide-react-native";
 
 import { View } from "react-native";
 
@@ -23,24 +18,21 @@ import type { InstallationTechnicalActions } from "../../api/installations.contr
 
 /*
  * =========================================================
- * ACTION TYPES
+ * MOBILE LIFECYCLE ACTIONS
  * =========================================================
  *
- * Solo acciones del ciclo físico de instalación.
+ * Android solamente soporta:
  *
- * subirEvidencia
- * revelarCredenciales
- * reintentarPrealta
+ * - iniciar;
+ * - completar.
  *
- * pertenecen a sus secciones técnicas específicas.
+ * Aunque el contrato técnico del servidor también
+ * contenga otras acciones, no forman parte de la UX
+ * móvil.
  * =========================================================
  */
 
-export type InstallationLifecycleAction =
-  | "start"
-  | "reprogram"
-  | "complete"
-  | "cancel";
+export type InstallationLifecycleAction = "start" | "complete";
 
 /*
  * =========================================================
@@ -69,166 +61,90 @@ export function InstallationBottomActionBar({
 }: InstallationBottomActionBarProps) {
   const insets = useSafeAreaInsets();
 
-  /*
-   * =======================================================
-   * SERVER AUTHORITY
-   * =======================================================
-   *
-   * No consultamos estado.
-   * No inferimos máquina de estados.
-   *
-   * El servidor ya decidió qué está habilitado.
-   * =======================================================
-   */
+  const isBusy = isLoadingAction !== null;
 
   const canStart = actions.iniciar.habilitada;
 
-  const canReprogram = actions.reprogramar.habilitada;
-
   const canComplete = actions.completar.habilitada;
 
-  const canCancel = actions.cancelar.habilitada;
-
-  const hasLifecycleActions =
-    canStart || canReprogram || canComplete || canCancel;
-
-  const isBusy = isLoadingAction !== null;
+  const hasActions = canStart || canComplete;
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.root,
+
+        {
+          paddingBottom: Math.max(insets.bottom, 8),
+        },
+      ]}
+    >
       <AppSurface
         variant="elevated"
         radius="lg"
         padding="md"
-        elevation="medium"
-        style={[
-          styles.surface,
-
-          {
-            paddingBottom: Math.max(insets.bottom, 12),
-          },
-        ]}
+        elevation="high"
+        style={styles.surface}
       >
-        <AppStack gap="sm">
-          <AppText variant="bodySmall" tone="secondary" weight="medium">
-            Acciones operativas
-          </AppText>
-
-          {hasLifecycleActions ? (
-            <AppGrid gap="sm" minItemWidth={120}>
-              {/* ===========================================
-                  INICIAR
-                 =========================================== */}
-
-              {canStart ? (
-                <AppButton
-                  size="md"
-                  variant="solid"
-                  tone="primary"
-                  leadingIcon={PlayCircle}
-                  fullWidth
-                  loading={isLoadingAction === "start"}
-                  disabled={isBusy}
-                  loadingAccessibilityLabel="Iniciando instalación"
-                  accessibilityLabel="Iniciar trabajo de instalación"
-                  onPress={() => {
-                    onRequestAction("start");
-                  }}
-                >
-                  Iniciar
-                </AppButton>
-              ) : null}
-
-              {/* ===========================================
-                  COMPLETAR
-                 =========================================== */}
-
-              {canComplete ? (
-                <AppButton
-                  size="md"
-                  variant="solid"
-                  tone="success"
-                  leadingIcon={CheckCircle2}
-                  fullWidth
-                  loading={isLoadingAction === "complete"}
-                  disabled={isBusy}
-                  loadingAccessibilityLabel="Completando instalación"
-                  accessibilityLabel="Completar instalación"
-                  onPress={() => {
-                    onRequestAction("complete");
-                  }}
-                >
-                  Completar
-                </AppButton>
-              ) : null}
-
-              {/* ===========================================
-                  REPROGRAMAR
-                 =========================================== */}
-
-              {canReprogram ? (
-                <AppButton
-                  size="md"
-                  variant="outlined"
-                  tone="warning"
-                  leadingIcon={CalendarClock}
-                  fullWidth
-                  loading={isLoadingAction === "reprogram"}
-                  disabled={isBusy}
-                  loadingAccessibilityLabel="Reprogramando instalación"
-                  accessibilityLabel="Reprogramar instalación"
-                  onPress={() => {
-                    onRequestAction("reprogram");
-                  }}
-                >
-                  Reprogramar
-                </AppButton>
-              ) : null}
-
-              {/* ===========================================
-                  CANCELAR
-                 =========================================== */}
-
-              {canCancel ? (
-                <AppButton
-                  size="md"
-                  variant="soft"
-                  tone="danger"
-                  leadingIcon={XCircle}
-                  fullWidth
-                  loading={isLoadingAction === "cancel"}
-                  disabled={isBusy}
-                  loadingAccessibilityLabel="Cancelando instalación"
-                  accessibilityLabel="Cancelar instalación"
-                  onPress={() => {
-                    onRequestAction("cancel");
-                  }}
-                >
-                  Cancelar
-                </AppButton>
-              ) : null}
-            </AppGrid>
-          ) : (
-            <AppStack gap="xs">
+        {hasActions ? (
+          <AppGrid gap="sm" minItemWidth={160}>
+            {canStart ? (
               <AppButton
                 size="md"
-                variant="soft"
-                tone="neutral"
+                variant="solid"
+                tone="primary"
+                leadingIcon={PlayCircle}
+                fullWidth
+                loading={isLoadingAction === "start"}
+                disabled={isBusy && isLoadingAction !== "start"}
+                loadingAccessibilityLabel="Iniciando instalación"
+                accessibilityLabel="Iniciar instalación"
+                onPress={() => {
+                  if (isBusy) {
+                    return;
+                  }
+
+                  onRequestAction("start");
+                }}
+              >
+                Iniciar
+              </AppButton>
+            ) : null}
+
+            {canComplete ? (
+              <AppButton
+                size="md"
+                variant="solid"
+                tone="success"
                 leadingIcon={CheckCircle2}
                 fullWidth
-                disabled
-                accessibilityLabel="Sin acciones de ciclo disponibles"
-              >
-                Sin acciones de ciclo
-              </AppButton>
+                loading={isLoadingAction === "complete"}
+                disabled={isBusy && isLoadingAction !== "complete"}
+                loadingAccessibilityLabel="Preparando finalización"
+                accessibilityLabel="Completar instalación"
+                onPress={() => {
+                  if (isBusy) {
+                    return;
+                  }
 
-              <AppText variant="bodySmall" tone="secondary" align="center">
-                El servidor no habilita cambios de estado para esta instalación
-                en este momento.
-              </AppText>
-            </AppStack>
-          )}
-        </AppStack>
+                  onRequestAction("complete");
+                }}
+              >
+                Completar
+              </AppButton>
+            ) : null}
+          </AppGrid>
+        ) : (
+          <AppStack gap="xs" align="center">
+            <AppText variant="bodySmall" weight="semibold" align="center">
+              Sin acciones disponibles
+            </AppText>
+
+            <AppText variant="bodySmall" tone="secondary" align="center">
+              El servidor no habilita acciones de ciclo para esta instalación.
+            </AppText>
+          </AppStack>
+        )}
       </AppSurface>
     </View>
   );
@@ -241,8 +157,10 @@ export function InstallationBottomActionBar({
  */
 
 const styles = StyleSheet.create((theme) => ({
-  container: {
+  root: {
     flexShrink: 0,
+
+    width: "100%",
 
     paddingTop: theme.spacing.sm,
 
@@ -254,12 +172,8 @@ const styles = StyleSheet.create((theme) => ({
   surface: {
     width: "100%",
 
-    alignSelf: "center",
-
     maxWidth: 760,
 
-    borderWidth: 1,
-
-    borderColor: theme.colors.border,
+    alignSelf: "center",
   },
 }));

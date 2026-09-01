@@ -1,4 +1,4 @@
-import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
+import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 
 import {
   getAssignedInstallations,
@@ -9,178 +9,100 @@ import type { AssignedInstallationsParams } from "../api/installations.contracts
 
 /*
  * =========================================================
- * FILTROS DE BANDEJA
- * =========================================================
- *
- * La página NO pertenece a los filtros externos de la
- * infinite query.
- *
- * pageParam es responsabilidad de TanStack Query.
+ * TYPES
  * =========================================================
  */
 
 export type AssignedInstallationsFilters = Omit<
   AssignedInstallationsParams,
-  "page"
+  "page" | "limit"
 >;
 
-const DEFAULT_ASSIGNED_INSTALLATIONS_LIMIT = 10;
+export interface AssignedInstallationsPageParams extends AssignedInstallationsFilters {
+  page: number;
 
-/*
- * =========================================================
- * NORMALIZACIÓN DE FILTROS
- * =========================================================
- *
- * Queremos que:
- *
- * search: "  Juan  "
- *
- * y:
- *
- * search: "Juan"
- *
- * produzcan exactamente la misma consulta y query key.
- *
- * También evitamos incluir strings vacíos como filtros.
- * =========================================================
- */
-
-function normalizeAssignedInstallationsFilters(
-  filters: AssignedInstallationsFilters,
-) {
-  const search = filters.search?.trim();
-
-  return {
-    limit: filters.limit ?? DEFAULT_ASSIGNED_INSTALLATIONS_LIMIT,
-
-    search: search && search.length > 0 ? search : undefined,
-
-    estado: filters.estado,
-
-    fechaProgramadaDesde: filters.fechaProgramadaDesde,
-
-    fechaProgramadaHasta: filters.fechaProgramadaHasta,
-  };
+  limit: number;
 }
 
 /*
  * =========================================================
  * QUERY KEYS
  * =========================================================
- *
- * installations
- * │
- * ├── assigned
- * │   └── { filters }
- * │
- * └── detail
- *     └── :installationId
- *
- * La jerarquía nos permitirá posteriormente invalidar:
- *
- * - toda la feature;
- * - toda la bandeja;
- * - una variante filtrada;
- * - todos los detalles;
- * - un detalle específico.
- *
- * No incluimos technicianId:
- * la identidad se obtiene desde el JWT en servidor.
- * =========================================================
  */
 
 export const installationsQueryKeys = {
   all: ["installations"] as const,
 
+  /*
+   * Raíz de cualquier consulta relacionada con la
+   * bandeja de instalaciones asignadas.
+   *
+   * También sirve para invalidar TODAS sus páginas:
+   *
+   * queryClient.invalidateQueries({
+   *   queryKey: installationsQueryKeys.assigned(),
+   * })
+   */
   assigned: () => [...installationsQueryKeys.all, "assigned"] as const,
 
-  assignedList: (filters: AssignedInstallationsFilters = {}) =>
-    [
-      ...installationsQueryKeys.assigned(),
-      normalizeAssignedInstallationsFilters(filters),
-    ] as const,
-
-  details: () => [...installationsQueryKeys.all, "detail"] as const,
+  /*
+   * Página específica.
+   *
+   * Los filtros forman parte de la query key.
+   */
+  assignedPage: (params: AssignedInstallationsPageParams) =>
+    [...installationsQueryKeys.assigned(), "page", params] as const,
 
   detail: (installationId: number) =>
-    [...installationsQueryKeys.details(), installationId] as const,
+    [...installationsQueryKeys.all, "detail", installationId] as const,
 };
 
 /*
  * =========================================================
- * MIS INSTALACIONES ASIGNADAS
+ * ASSIGNED INSTALLATIONS
  * =========================================================
  *
- * GET cliente-instalaciones/mis-asignadas
+ * GET /cliente-instalaciones/mis-asignadas
  *
- * Infinite Query:
- *
- * page 1
- *   ↓
- * page 2
- *   ↓
- * page 3
- *
- * getNextPageParam se guía exclusivamente por la metadata
- * entregada por el backend.
+ * Paginación explícita controlada por la pantalla.
  * =========================================================
  */
 
-export function assignedInstallationsInfiniteQueryOptions(
-  filters: AssignedInstallationsFilters = {},
+export function assignedInstallationsQueryOptions(
+  params: AssignedInstallationsPageParams,
 ) {
-  const normalizedFilters = normalizeAssignedInstallationsFilters(filters);
+  return queryOptions({
+    queryKey: installationsQueryKeys.assignedPage(params),
 
-  return infiniteQueryOptions({
-    queryKey: installationsQueryKeys.assignedList(normalizedFilters),
-
-    initialPageParam: 1,
-
-    queryFn: ({ pageParam, signal }) =>
+    queryFn: ({ signal }) =>
       getAssignedInstallations(
         {
-          ...normalizedFilters,
-
-          page: pageParam,
+          ...params,
         },
+
         signal,
       ),
 
-    getNextPageParam: (lastPage) => {
-      const { page, totalPages } = lastPage.meta;
-
-      if (page >= totalPages) {
-        return undefined;
-      }
-
-      return page + 1;
-    },
-
     /*
-     * Información operacional.
+     * Al navegar:
      *
-     * Queremos refrescar con frecuencia razonable,
-     * pero no rehacer requests por cada render.
+     * página 1
+     *    ↓
+     * página 2
+     *
+     * mantenemos los datos anteriores mientras llega
+     * la respuesta nueva.
+     *
+     * La pantalla usa isPlaceholderData para indicar
+     * que se está realizando el cambio.
      */
-    staleTime: 30_000,
-
-    refetchOnMount: "always",
-
-    refetchOnReconnect: "always",
-
-    retry: 1,
+    placeholderData: keepPreviousData,
   });
 }
 
 /*
  * =========================================================
- * DETALLE TÉCNICO
- * =========================================================
- *
- * GET cliente-instalaciones/:id/tecnica
- *
- * Aquí sí usamos una query normal:
- * solo existe un detalle por instalación.
+ * TECHNICAL DETAIL
  * =========================================================
  */
 
@@ -191,20 +113,12 @@ export function installationTechnicalDetailQueryOptions(
     queryKey: installationsQueryKeys.detail(installationId),
 
     queryFn: ({ signal }) =>
-      getInstallationTechnicalDetail(installationId, signal),
+      getInstallationTechnicalDetail(
+        installationId,
 
-    /*
-     * No hacemos requests con un id todavía
-     * inexistente o inválido.
-     */
+        signal,
+      ),
+
     enabled: Number.isInteger(installationId) && installationId > 0,
-
-    staleTime: 30_000,
-
-    refetchOnMount: "always",
-
-    refetchOnReconnect: "always",
-
-    retry: 1,
   });
 }
