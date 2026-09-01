@@ -1,5 +1,7 @@
 import type { RealtimeFeatureBinding } from "@/core/realtime/realtime-handlers";
 
+import { realTimeLocationRealtimeBinding } from "@/features/real-time-location/realtime";
+
 /**
  * Realtime feature bindings activos en la aplicación.
  *
@@ -12,4 +14,6 @@ import type { RealtimeFeatureBinding } from "@/core/realtime/realtime-handlers";
  *
  * No colocar lógica de negocio directamente en este archivo.
  */
-export const appRealtimeFeatureBindings: readonly RealtimeFeatureBinding[] = [];
+export const appRealtimeFeatureBindings: readonly RealtimeFeatureBinding[] = [
+  realTimeLocationRealtimeBinding,
+];
