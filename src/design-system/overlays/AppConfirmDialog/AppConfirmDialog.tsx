@@ -15,7 +15,7 @@ export const AppConfirmDialog = ({
   children,
   icon,
   tone = "neutral",
-  size = "md",
+  size = "lg",
 
   scrollable = false,
 
@@ -78,7 +78,7 @@ export const AppConfirmDialog = ({
       scrollable={scrollable}
       testID={testID}
       actions={
-        <AppActionGroup orientation="auto" align="end">
+        <AppActionGroup orientation="horizontal" align="end" gap="sm">
           <AppButton
             variant="ghost"
             tone="neutral"

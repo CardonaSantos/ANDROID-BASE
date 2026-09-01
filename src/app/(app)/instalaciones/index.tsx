@@ -1,10 +1,19 @@
-import { ModulePlaceholderScreen } from "@/features/dashboard";
+import { useRouter } from "expo-router";
 
-export default function InstallationsScreen() {
-  return (
-    <ModulePlaceholderScreen
-      title="Instalaciones"
-      description="Trabajos e instalaciones asignadas."
-    />
-  );
+import { InstallationsAssignedScreen } from "@/features/installations/presentation/InstallationsAssignedScreen";
+
+export default function InstallationsRoute() {
+  const router = useRouter();
+
+  const handleOpenDetails = (installationId: number) => {
+    router.push({
+      pathname: "/instalaciones/[instalacionId]",
+
+      params: {
+        instalacionId: String(installationId),
+      },
+    });
+  };
+
+  return <InstallationsAssignedScreen onOpenDetails={handleOpenDetails} />;
 }

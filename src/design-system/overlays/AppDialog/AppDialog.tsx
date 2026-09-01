@@ -253,10 +253,6 @@ const styles = StyleSheet.create((theme) => ({
   center: {
     width: "100%",
 
-    minHeight: 0,
-
-    flexShrink: 1,
-
     alignItems: "center",
 
     justifyContent: "center",
@@ -267,16 +263,6 @@ const styles = StyleSheet.create((theme) => ({
 
     maxWidth: dialogWidth[size],
 
-    /*
-     * Nunca permitimos que el diálogo
-     * se salga del viewport.
-     */
-    maxHeight: "90%",
-
-    minHeight: 0,
-
-    overflow: "hidden",
-
     backgroundColor: theme.colors.surfaceElevated,
   }),
 
@@ -286,7 +272,7 @@ const styles = StyleSheet.create((theme) => ({
    * el espacio disponible.
    */
   dialogLayout: {
-    minHeight: 0,
+    // minHeight: 0,
 
     maxHeight: "100%",
   },

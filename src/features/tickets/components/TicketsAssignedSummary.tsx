@@ -1,10 +1,4 @@
-import {
-  ClipboardList,
-  MapPin,
-  Siren,
-  TicketCheck,
-  Wrench,
-} from "lucide-react-native";
+import { ClipboardList, Siren, TicketCheck, Wrench } from "lucide-react-native";
 
 import {
   AppBadge,
@@ -81,14 +75,6 @@ export function TicketsAssignedSummary({
             value={stats.enProceso}
             icon={Wrench}
             tone="warning"
-            variant="tonal"
-          />
-
-          <AppStat
-            label="Con mapa"
-            value={stats.conUbicacion}
-            icon={MapPin}
-            tone="info"
             variant="tonal"
           />
         </AppGrid>
