@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react-native";
 import {
   HandCoins,
   House,
+  Map,
   MapPinned,
   TicketCheck,
   UserRound,
@@ -15,6 +16,7 @@ export type AppNavigationHref =
   | "/tickets"
   | "/instalaciones"
   | "/cobros"
+  | "/mapa"
   | "/perfil";
 
 export type AppNavigationMatchMode = "exact" | "prefix";
@@ -88,7 +90,21 @@ export const appNavigationRoutes = [
 
     roles: ["TECNICO"],
   },
+  {
+    key: "realtime-map",
 
+    label: "Mapa",
+
+    href: "/mapa",
+
+    icon: Map,
+
+    match: "prefix",
+
+    placement: "sidebar",
+
+    roles: ["TECNICO"],
+  },
   {
     key: "tickets",
 

@@ -7,27 +7,9 @@ import {
   type TechnicianTrackingRealtimeList,
 } from "./real-time-location.contracts.api";
 
-/*
- * =========================================================
- * ENDPOINTS
- * =========================================================
- */
-
 const REAL_TIME_LOCATION_ENDPOINTS = {
   trackingRealtime: "real-time-location/tracking/realtime",
 } as const;
-
-/*
- * =========================================================
- * RESPONSE PARSING
- * =========================================================
- *
- * HTTP es una frontera externa igual que Socket.IO.
- *
- * Aunque httpClient transporte correctamente la respuesta,
- * el payload sigue siendo desconocido hasta validarlo.
- * =========================================================
- */
 
 function parseTechnicianTrackingRealtimeList(
   payload: unknown,
@@ -51,22 +33,6 @@ function parseTechnicianTrackingRealtimeList(
 
   return result.data;
 }
-
-/*
- * =========================================================
- * GET REALTIME TRACKING SNAPSHOT
- * =========================================================
- *
- * Fuente inicial del mapa:
- *
- * HTTP snapshot
- *      ↓
- * TechnicianTrackingRealtimeList
- *
- * Después de cargarlo, Socket.IO mantiene esa misma vista
- * actualizada mediante tracking:location-updated.
- * =========================================================
- */
 
 export async function getTechnicianTrackingRealtime(
   signal?: AbortSignal,

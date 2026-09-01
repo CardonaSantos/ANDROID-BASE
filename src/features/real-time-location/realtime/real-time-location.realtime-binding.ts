@@ -5,7 +5,9 @@ import {
 
 import {
   handleTrackingLocationUpdated,
+  handleTrackingStateChanged,
   TRACKING_LOCATION_UPDATED_EVENT,
+  TRACKING_STATE_CHANGED_EVENT,
 } from "./real-time-location.realtime-handler";
 
 /*
@@ -13,14 +15,16 @@ import {
  * REALTIME BINDING
  * =========================================================
  *
- * Este archivo traduce:
+ * El feature escucha dos familias de eventos:
  *
- * evento Socket.IO
- *       ↓
- * handler del feature
+ * tracking:location-updated
+ *   → actualiza la representación enriquecida del técnico.
  *
- * El Core no conoce real-time-location y este feature
- * tampoco necesita conocer Socket.IO directamente.
+ * tracking:state-changed
+ *   → sincroniza el ciclo de vida de la sesión.
+ *
+ * Core continúa siendo responsable únicamente
+ * del transporte Socket.IO.
  * =========================================================
  */
 
@@ -32,14 +36,18 @@ export const realTimeLocationRealtimeBinding: RealtimeFeatureBinding =
 
         handle: handleTrackingLocationUpdated,
       },
+
+      {
+        type: TRACKING_STATE_CHANGED_EVENT,
+
+        handle: handleTrackingStateChanged,
+      },
     ],
 
     onError(error, event) {
       /*
-       * No imprimimos el payload porque puede contener
-       * datos operativos del técnico.
-       *
-       * Más adelante esto puede dirigirse a telemetry.
+       * No imprimimos payloads de ubicación ni
+       * información operacional del técnico.
        */
       console.error(
         `[real-time-location/realtime] No fue posible procesar ${event.type}.`,
