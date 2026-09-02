@@ -1,9 +1,6 @@
-import { useEffect } from "react";
-
 import { Radio, RefreshCw, Wifi, WifiOff } from "lucide-react-native";
 
 import {
-  realtimeClient,
   useIsRealtimeConnected,
   useRealtimeReconnectAttempt,
   useRealtimeStatus,
@@ -65,6 +62,15 @@ function getSuspendReasonLabel(
  * =========================================================
  * COMPONENT
  * =========================================================
+ *
+ * Este componente solamente representa visualmente el
+ * estado global de realtime.
+ *
+ * No abre Socket.IO.
+ * No cierra Socket.IO.
+ * No registra listeners de negocio.
+ * No controla tracking/GPS.
+ * =========================================================
  */
 
 export function RealtimeConnectionCard() {
@@ -77,79 +83,6 @@ export function RealtimeConnectionCard() {
   const reconnectAttempt = useRealtimeReconnectAttempt();
 
   const suspendReasonLabel = getSuspendReasonLabel(suspendReason);
-
-  /*
-   * =======================================================
-   * DEVELOPMENT DIAGNOSTICS
-   * =======================================================
-   *
-   * status="connected" solamente ocurre después del
-   * evento real Socket.IO "connect".
-   *
-   * Nunca imprimimos:
-   *
-   * - JWT;
-   * - payloads;
-   * - coordenadas;
-   * - datos privados del técnico.
-   * =======================================================
-   */
-
-  useEffect(() => {
-    if (!__DEV__) {
-      return;
-    }
-
-    const snapshot = realtimeClient.getSnapshot();
-
-    console.info("[realtime] Estado Socket.IO:", {
-      status: snapshot.status,
-
-      configured: snapshot.configured,
-
-      reconnectAttempt: snapshot.reconnectAttempt,
-
-      suspendReason: snapshot.suspendReason,
-
-      connectedAt:
-        snapshot.connectedAt === null
-          ? null
-          : new Date(snapshot.connectedAt).toISOString(),
-
-      disconnectedAt:
-        snapshot.disconnectedAt === null
-          ? null
-          : new Date(snapshot.disconnectedAt).toISOString(),
-    });
-
-    if (snapshot.status === "connected") {
-      console.info("[realtime] Socket.IO conectado correctamente al CRM.");
-    }
-  }, [status, reconnectAttempt, suspendReason]);
-
-  /*
-   * También registramos en desarrollo los nombres
-   * de eventos recibidos, pero nunca sus payloads.
-   */
-  useEffect(() => {
-    if (!__DEV__) {
-      return;
-    }
-
-    const releaseEvents = realtimeClient.subscribeAll((event) => {
-      console.info(`[realtime] Evento recibido: ${event.type}`);
-    });
-
-    const releaseErrors = realtimeClient.subscribeErrors((error) => {
-      console.error("[realtime] Error Socket.IO:", error);
-    });
-
-    return () => {
-      releaseErrors();
-
-      releaseEvents();
-    };
-  }, []);
 
   return (
     <AppCard>

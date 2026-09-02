@@ -2,6 +2,8 @@ import type { RealtimeFeatureBinding } from "@/core/realtime/realtime-handlers";
 
 import { realTimeLocationRealtimeBinding } from "@/features/real-time-location/realtime";
 
+import { ticketsRealtimeBinding } from "@/features/tickets/realtime";
+
 /**
  * Realtime feature bindings activos en la aplicación.
  *
@@ -16,4 +18,6 @@ import { realTimeLocationRealtimeBinding } from "@/features/real-time-location/r
  */
 export const appRealtimeFeatureBindings: readonly RealtimeFeatureBinding[] = [
   realTimeLocationRealtimeBinding,
+
+  ticketsRealtimeBinding,
 ];

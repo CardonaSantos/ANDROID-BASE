@@ -7,9 +7,11 @@
     "icon": "./assets/images/NOVA LOGO-PNG.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
+
     "ios": {
       "icon": "./assets/images/NOVA LOGO-PNG.png"
     },
+
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -17,15 +19,22 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+
       "predictiveBackGestureEnabled": false,
-      "package": "com.cardonasantos.myapp"
+
+      "package": "com.cardonasantos.myapp",
+
+      "googleServicesFile": "./google-services.json"
     },
+
     "web": {
       "output": "single",
       "favicon": "./assets/images/NOVA LOGO-PNG.png"
     },
+
     "plugins": [
       "expo-router",
+
       [
         "expo-splash-screen",
         {
@@ -34,6 +43,7 @@
           "imageWidth": 76
         }
       ],
+
       [
         "expo-location",
         {
@@ -41,12 +51,22 @@
           "isAndroidForegroundServiceEnabled": true
         }
       ],
+
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "tickets",
+          "color": "#208AEF"
+        }
+      ],
+
       "expo-image",
       "expo-video",
       "expo-secure-store",
       "expo-sqlite",
       "expo-localization"
     ],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
