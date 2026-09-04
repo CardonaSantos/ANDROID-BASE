@@ -270,7 +270,7 @@ export function TicketAssignedCard({
               <AppButton
                 size="md"
                 variant={lifecycleAction === "review" ? "soft" : "solid"}
-                tone={lifecycleAction === "review" ? "info" : "primary"}
+                tone={lifecycleAction === "review" ? "warning" : "primary"}
                 leadingIcon={lifecycleAction === "review" ? Send : Wrench}
                 fullWidth
                 loading={isMutating}
