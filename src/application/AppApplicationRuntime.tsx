@@ -34,7 +34,7 @@ export function AppApplicationRuntime({ children }: PropsWithChildren) {
        * No renderiza UI.
        */}
       <AppNotificationNavigationRuntime />
-
+      {/* XDDD */}
       {children}
     </>
   );
