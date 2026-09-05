@@ -126,7 +126,13 @@ export const ticketDetailAddressSchema = z.object({
 });
 
 export const ticketAssignedDetailSchema = ticketAssignedBaseSchema.extend({
-  clientId: z.number().int().positive(),
+  /*
+   * Un ticket puede existir sin ClienteInternet asociado.
+   *
+   * El listado ya soporta esta condición y el detalle
+   * debe mantener exactamente la misma regla.
+   */
+  clientId: z.number().int().positive().nullable(),
 
   direccion: ticketDetailAddressSchema,
 

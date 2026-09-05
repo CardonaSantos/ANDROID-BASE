@@ -23,6 +23,29 @@ export function TicketContactSection({
   ticket,
   onCopyText,
 }: TicketContactSectionProps) {
+  /*
+   * =======================================================
+   * CLIENT
+   * =======================================================
+   *
+   * Los tickets operativos pueden existir sin un
+   * ClienteInternet asociado.
+   *
+   * No utilizamos valores artificiales como 0 o -1.
+   * null representa realmente la ausencia de relación.
+   * =======================================================
+   */
+
+  const hasClient = ticket.clientId !== null;
+
+  const clientLabel = hasClient
+    ? `Cliente #${ticket.clientId}`
+    : "Sin cliente asociado";
+
+  const clientName = hasClient
+    ? ticket.clienteNombre || "Cliente sin nombre"
+    : "Sin cliente asociado";
+
   return (
     <AppCard variant="outlined" radius="lg" padding="md">
       <AppStack gap="md">
@@ -39,7 +62,7 @@ export function TicketContactSection({
             </AppText>
 
             <AppText variant="bodySmall" tone="secondary">
-              {`Cliente #${ticket.clientId}`}
+              {clientLabel}
             </AppText>
           </AppStack>
         </AppInline>
@@ -54,7 +77,7 @@ export function TicketContactSection({
           </AppText>
 
           <AppText variant="titleMedium" weight="semibold">
-            {ticket.clienteNombre || "Cliente sin nombre"}
+            {clientName}
           </AppText>
         </AppStack>
 
@@ -62,20 +85,26 @@ export function TicketContactSection({
             CONTACTOS
            =============================================== */}
 
-        <AppGrid gap="sm" minItemWidth={260}>
-          <TicketContactActions
-            label="Contacto principal"
-            phone={ticket.clienteTel}
-            onCopy={onCopyText}
-          />
+        {hasClient ? (
+          <AppGrid gap="sm" minItemWidth={260}>
+            <TicketContactActions
+              label="Contacto principal"
+              phone={ticket.clienteTel}
+              onCopy={onCopyText}
+            />
 
-          <TicketContactActions
-            label="Referencia"
-            phone={ticket.referenciaContacto}
-            compact
-            onCopy={onCopyText}
-          />
-        </AppGrid>
+            <TicketContactActions
+              label="Referencia"
+              phone={ticket.referenciaContacto}
+              compact
+              onCopy={onCopyText}
+            />
+          </AppGrid>
+        ) : (
+          <AppText variant="bodySmall" tone="secondary">
+            Este ticket no tiene información de contacto de cliente asociada.
+          </AppText>
+        )}
       </AppStack>
     </AppCard>
   );
