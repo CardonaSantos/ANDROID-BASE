@@ -28,12 +28,15 @@ export type NotificationsRuntimeStatus =
 
 export interface NativePushToken {
   /*
+   * Token nativo devuelto por expo-notifications.
+   *
    * Android:
+   * type = "android"
+   * data = token FCM
    *
-   * type = "fcm"
-   *
-   * Dejamos string para no acoplar nuestro contrato interno
-   * a los tipos públicos de Expo.
+   * iOS:
+   * type = "ios"
+   * data = token APNs
    */
   type: string;
 

@@ -129,11 +129,18 @@ async function registerCurrentDevice(): Promise<void> {
   }
 
   /*
-   * Nuestro Server actual está configurado para Android/FCM.
+   * getDevicePushTokenAsync() identifica la plataforma
+   * nativa en `type`.
+   *
+   * Android:
+   *   type = "android"
+   *   data = token FCM
    */
-  if (pushToken.type.toLowerCase() !== "fcm") {
+  if (pushToken.type.toLowerCase() !== "android") {
     if (__DEV__) {
-      console.warn("[push-registration] El token nativo no pertenece a FCM.");
+      console.warn(
+        "[push-registration] El token nativo no pertenece a Android.",
+      );
     }
 
     return;
