@@ -1,17 +1,15 @@
 {
   "expo": {
     "name": "Nova",
-    "slug": "nova-app",
+    "slug": "nova-tecnico-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/NOVA LOGO-PNG.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-
     "ios": {
       "icon": "./assets/images/NOVA LOGO-PNG.png"
     },
-
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -19,22 +17,23 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-
       "predictiveBackGestureEnabled": false,
-
       "package": "com.cardonasantos.myapp",
-
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
+      ]
     },
-
     "web": {
       "output": "single",
       "favicon": "./assets/images/NOVA LOGO-PNG.png"
     },
-
     "plugins": [
       "expo-router",
-
       [
         "expo-splash-screen",
         {
@@ -43,7 +42,6 @@
           "imageWidth": 76
         }
       ],
-
       [
         "expo-location",
         {
@@ -51,7 +49,6 @@
           "isAndroidForegroundServiceEnabled": true
         }
       ],
-
       [
         "expo-notifications",
         {
@@ -59,17 +56,28 @@
           "color": "#208AEF"
         }
       ],
-
+      [
+        "react-native-maps",
+        {
+          "androidGoogleMapsApiKey": "AIzaSyCulIAmADYAZRKfcB40_lP5_irCoLxu_3s"
+        }
+      ],
       "expo-image",
       "expo-video",
       "expo-secure-store",
       "expo-sqlite",
       "expo-localization"
     ],
-
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7c5e0f88-4787-45a2-bd55-bf86cb1f515e"
+      }
+    },
+    "owner": "cardonasantos"
   }
 }
