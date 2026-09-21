@@ -14,7 +14,7 @@ export const dashboardModules = [
 
     icon: MapPinned,
 
-    roles: ["TECNICO"],
+    roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
   },
 
   {
@@ -28,7 +28,7 @@ export const dashboardModules = [
 
     icon: Wrench,
 
-    roles: ["TECNICO"],
+    roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
   },
 
   {
@@ -42,7 +42,7 @@ export const dashboardModules = [
 
     icon: TicketCheck,
 
-    roles: ["TECNICO"],
+    roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
   },
 
   {
@@ -56,6 +56,6 @@ export const dashboardModules = [
 
     icon: HandCoins,
 
-    roles: ["COBRADOR"],
+    roles: ["COBRADOR", "TECNICO", "ADMIN", "SUPER_ADMIN"],
   },
 ] satisfies readonly DashboardModule[];

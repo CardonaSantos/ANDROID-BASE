@@ -46,12 +46,18 @@ export interface TicketDetailScreenProps {
   onBack: () => void;
 
   onCopyText: (value: string) => void | Promise<void>;
+
+  onOpenTechnicianSignature: () => void;
+
+  onOpenClientSignature: () => void;
 }
 
 export function TicketDetailScreen({
   ticketId,
   onBack,
   onCopyText,
+  onOpenTechnicianSignature,
+  onOpenClientSignature,
 }: TicketDetailScreenProps) {
   const [pendingAction, setPendingAction] =
     useState<TicketLifecycleAction | null>(null);
@@ -350,6 +356,8 @@ export function TicketDetailScreen({
       <TicketBottomActionBar
         status={ticket.estado}
         isLoading={isMutating}
+        onRequestTechnicianSignature={onOpenTechnicianSignature}
+        onRequestClientSignature={onOpenClientSignature}
         onRequestAction={(action) => {
           setPendingAction(action);
         }}

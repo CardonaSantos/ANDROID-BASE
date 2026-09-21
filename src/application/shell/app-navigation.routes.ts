@@ -88,7 +88,7 @@ export const appNavigationRoutes = [
 
     placement: "sidebar",
 
-    roles: ["TECNICO"],
+    roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
   },
   {
     key: "realtime-map",
@@ -103,7 +103,7 @@ export const appNavigationRoutes = [
 
     placement: "sidebar",
 
-    roles: ["TECNICO"],
+    roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
   },
   {
     key: "tickets",
@@ -118,7 +118,7 @@ export const appNavigationRoutes = [
 
     placement: "sidebar",
 
-    roles: ["TECNICO"],
+    roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
   },
 
   {
@@ -134,7 +134,7 @@ export const appNavigationRoutes = [
 
     placement: "sidebar",
 
-    roles: ["TECNICO"],
+    roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
   },
 
   {
@@ -150,7 +150,7 @@ export const appNavigationRoutes = [
 
     placement: "sidebar",
 
-    roles: ["COBRADOR"],
+    roles: ["COBRADOR", "TECNICO", "ADMIN", "SUPER_ADMIN"],
   },
 
   /*

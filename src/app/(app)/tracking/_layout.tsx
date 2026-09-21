@@ -6,7 +6,9 @@ export default function TrackingLayout() {
   return (
     <RouteAccessBoundary
       requirement={{
-        roles: ["TECNICO"],
+        roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
+
+        roleMatch: "any",
       }}
       checkingFallback={null}
       unauthenticatedFallback={<Redirect href="/login" />}

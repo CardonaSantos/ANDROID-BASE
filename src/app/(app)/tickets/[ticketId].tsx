@@ -11,31 +11,11 @@ export default function TicketDetailRoute() {
     ticketId?: string;
   }>();
 
-  /*
-   * Expo Router entrega los params como strings.
-   *
-   * Si por cualquier motivo no viene o no puede
-   * convertirse a entero, TicketDetailScreen
-   * recibe 0 y muestra su estado de ID inválido.
-   */
   const ticketId = Number(ticketIdParam ?? 0);
 
   const handleBack = () => {
-    /*
-     * Entrada habitual:
-     *
-     * /tickets
-     *    ↓
-     * /tickets/:ticketId
-     *
-     * En ese caso conservamos la navegación natural.
-     *
-     * Para entrada directa / deep link dejamos
-     * /tickets como fallback.
-     */
     if (router.canGoBack()) {
       router.back();
-
       return;
     }
 
@@ -46,11 +26,31 @@ export default function TicketDetailRoute() {
     await Clipboard.setStringAsync(value);
   };
 
+  const handleOpenTechnicianSignature = () => {
+    router.push({
+      pathname: "/tickets/[ticketId]/firma-tecnico",
+      params: {
+        ticketId: String(ticketId),
+      },
+    });
+  };
+
+  const handleOpenClientSignature = () => {
+    router.push({
+      pathname: "/tickets/[ticketId]/firma-cliente",
+      params: {
+        ticketId: String(ticketId),
+      },
+    });
+  };
+
   return (
     <TicketDetailScreen
       ticketId={ticketId}
       onBack={handleBack}
       onCopyText={handleCopyText}
+      onOpenTechnicianSignature={handleOpenTechnicianSignature}
+      onOpenClientSignature={handleOpenClientSignature}
     />
   );
 }

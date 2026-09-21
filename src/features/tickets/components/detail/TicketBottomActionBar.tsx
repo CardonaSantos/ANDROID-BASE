@@ -1,4 +1,4 @@
-import { CheckCircle2, Send, Wrench } from "lucide-react-native";
+import { CheckCircle2, PenLine, Send, Wrench } from "lucide-react-native";
 
 import { View } from "react-native";
 
@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { StyleSheet } from "react-native-unistyles";
 
-import { AppButton, AppSurface } from "@/design-system";
+import { AppButton, AppGrid, AppStack } from "@/design-system";
 
 import type { TicketStatus } from "../../api/tickets.contracts.api";
 
@@ -22,12 +22,18 @@ export interface TicketBottomActionBarProps {
   isLoading?: boolean;
 
   onRequestAction: (action: TicketLifecycleAction) => void;
+
+  onRequestTechnicianSignature: () => void;
+
+  onRequestClientSignature: () => void;
 }
 
 export function TicketBottomActionBar({
   status,
   isLoading = false,
   onRequestAction,
+  onRequestClientSignature,
+  onRequestTechnicianSignature,
 }: TicketBottomActionBarProps) {
   const insets = useSafeAreaInsets();
 
@@ -37,18 +43,35 @@ export function TicketBottomActionBar({
 
   return (
     <View style={styles.container}>
-      <AppSurface
-        variant="elevated"
-        radius="lg"
-        padding="md"
-        elevation="medium"
-        style={[
-          styles.surface,
-          {
-            paddingBottom: Math.max(insets.bottom, 12),
-          },
-        ]}
-      >
+      <AppStack gap="sm">
+        <AppGrid gap="sm" minItemWidth={150}>
+          <AppButton
+            size="md"
+            variant="soft"
+            tone="neutral"
+            leadingIcon={PenLine}
+            fullWidth
+            disabled={isLoading}
+            accessibilityLabel="Registrar firma del técnico"
+            onPress={onRequestTechnicianSignature}
+          >
+            Firma técnico
+          </AppButton>
+
+          <AppButton
+            size="md"
+            variant="soft"
+            tone="info"
+            leadingIcon={PenLine}
+            fullWidth
+            disabled={isLoading}
+            accessibilityLabel="Registrar firma del cliente"
+            onPress={onRequestClientSignature}
+          >
+            Firma cliente
+          </AppButton>
+        </AppGrid>
+
         {lifecycleAction ? (
           <AppButton
             size="lg"
@@ -58,16 +81,6 @@ export function TicketBottomActionBar({
             fullWidth
             loading={isLoading}
             disabled={isLoading}
-            loadingAccessibilityLabel={
-              lifecycleAction === "review"
-                ? "Enviando ticket a revisión"
-                : "Tomando ticket en proceso"
-            }
-            accessibilityLabel={
-              lifecycleAction === "review"
-                ? "Enviar ticket a revisión"
-                : "Tomar ticket en proceso"
-            }
             onPress={() => {
               onRequestAction(lifecycleAction);
             }}
@@ -84,12 +97,11 @@ export function TicketBottomActionBar({
             leadingIcon={CheckCircle2}
             fullWidth
             disabled
-            accessibilityLabel={blockedLabel}
           >
             {blockedLabel}
           </AppButton>
         )}
-      </AppSurface>
+      </AppStack>
     </View>
   );
 }

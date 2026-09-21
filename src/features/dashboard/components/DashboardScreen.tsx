@@ -44,9 +44,14 @@ export function DashboardScreen() {
 
   const user = currentUserQuery.data;
 
-  const isTechnician = user.roles.includes("TECNICO");
+  const usesTechnicianDashboard = [
+    "TECNICO",
+    "COBRADOR",
+    "ADMIN",
+    "SUPER_ADMIN",
+  ].some((role) => user.roles.includes(role));
 
-  if (isTechnician) {
+  if (usesTechnicianDashboard) {
     return <TechnicianDashboardScreen />;
   }
 

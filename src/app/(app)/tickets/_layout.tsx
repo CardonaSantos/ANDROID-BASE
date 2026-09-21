@@ -4,12 +4,6 @@ export default function TicketsLayout() {
   return (
     <Stack
       screenOptions={{
-        /*
-         * El header principal pertenece al App Shell / Drawer.
-         *
-         * Las propias pantallas de detalle ya tienen
-         * AppTopBar para su navegación local.
-         */
         headerShown: false,
       }}
     >
@@ -22,6 +16,20 @@ export default function TicketsLayout() {
 
       <Stack.Screen
         name="[ticketId]"
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="[ticketId]/firma-tecnico"
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="[ticketId]/firma-cliente"
         options={{
           headerShown: false,
         }}
