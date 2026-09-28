@@ -38,6 +38,8 @@ import { TicketLocationSection } from "../components/detail/TicketLocationSectio
 
 import { TicketMediaSection } from "../components/detail/TicketMediaSection";
 
+import { TicketSignatureSection } from "../components/detail/TicketSignatureSection";
+
 import { TicketBottomActionBar } from "../components/detail/TicketBottomActionBar";
 
 export interface TicketDetailScreenProps {
@@ -346,18 +348,21 @@ export function TicketDetailScreen({
           <TicketDescriptionSection ticket={ticket} />
 
           <TicketMediaSection medias={ticket.medias} />
+
+          <TicketSignatureSection
+            onOpenTechnicianSignature={onOpenTechnicianSignature}
+            onOpenClientSignature={onOpenClientSignature}
+          />
         </AppStack>
       </AppScrollScreen>
 
       {/* ===================================================
-          PERSISTENT ACTION
+          PERSISTENT LIFECYCLE ACTION
          =================================================== */}
 
       <TicketBottomActionBar
         status={ticket.estado}
         isLoading={isMutating}
-        onRequestTechnicianSignature={onOpenTechnicianSignature}
-        onRequestClientSignature={onOpenClientSignature}
         onRequestAction={(action) => {
           setPendingAction(action);
         }}
