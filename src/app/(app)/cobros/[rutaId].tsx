@@ -21,6 +21,14 @@ export default function CollectionRoutePage() {
       onCopyText={async (value) => {
         await Clipboard.setStringAsync(value);
       }}
+      onOpenClientProfile={(clientId) => {
+        router.push({
+          pathname: "/clientes/[clienteId]",
+          params: {
+            clienteId: String(clientId),
+          },
+        });
+      }}
       onOpenReceipt={(invoiceId) => {
         router.push({
           pathname: "/cobros/comprobante/[facturaId]",

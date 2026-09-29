@@ -42,6 +42,7 @@ export interface CollectionClientCardProps {
   onCopyText: (value: string) => void | Promise<void>;
   onCallPhone: (phone: string) => void;
   onOpenRoute: (client: CollectionClient) => void;
+  onOpenProfile: (clientId: number) => void;
   onOpenPayment: (client: CollectionClient, invoice: CollectionInvoice) => void;
   onOpenReceipt: (invoiceId: number) => void;
 }
@@ -113,21 +114,12 @@ export function CollectionClientCard({
   onCopyText,
   onCallPhone,
   onOpenRoute,
+  onOpenProfile,
   onOpenPayment,
   onOpenReceipt,
 }: CollectionClientCardProps) {
   const hasLocation = hasCollectionLocation(client.ubicacion);
 
-  /*
-   * No usamos AppAccordion aquí.
-   *
-   * Este card vive dentro de FlashList y su contenido puede crecer bastante
-   * (contactos + varias facturas). AppAccordion aplica una transición de
-   * layout sobre todo el contenedor; al mismo tiempo FlashList recalcula la
-   * altura del item. Ambas animaciones compiten y producen una expansión lenta
-   * o deformada. En esta pantalla el cambio de altura es inmediato y FlashList
-   * queda como único responsable del re-layout.
-   */
   return (
     <AppCard
       variant="outlined"
@@ -189,6 +181,17 @@ export function CollectionClientCard({
 
       {expanded ? (
         <AppStack gap="md" style={styles.content}>
+          <AppButton
+            size="sm"
+            variant="soft"
+            tone="primary"
+            leadingIcon={UserRound}
+            fullWidth
+            onPress={() => onOpenProfile(client.id)}
+          >
+            Ver perfil del cliente
+          </AppButton>
+
           <AppStack gap="xs">
             <AppInline gap="xs" align="flex-start">
               <AppIcon icon={MapPin} size="sm" tone="muted" decorative />
@@ -259,12 +262,10 @@ const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.md,
   },
-
   clientName: {
     flex: 1,
     minWidth: 0,
   },
-
   content: {
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.lg,

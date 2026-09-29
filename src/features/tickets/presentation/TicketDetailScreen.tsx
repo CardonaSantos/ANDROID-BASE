@@ -42,6 +42,7 @@ export interface TicketDetailScreenProps {
   ticketId: number;
   onBack: () => void;
   onCopyText: (value: string) => void | Promise<void>;
+  onOpenClientProfile: (clientId: number) => void;
   onOpenTechnicianSignature: () => void;
   onOpenClientSignature: () => void;
 }
@@ -50,6 +51,7 @@ export function TicketDetailScreen({
   ticketId,
   onBack,
   onCopyText,
+  onOpenClientProfile,
   onOpenTechnicianSignature,
   onOpenClientSignature,
 }: TicketDetailScreenProps) {
@@ -295,7 +297,11 @@ export function TicketDetailScreen({
         <AppStack gap="md">
           <TicketHero ticket={ticket} />
 
-          <TicketContactSection ticket={ticket} onCopyText={onCopyText} />
+          <TicketContactSection
+            ticket={ticket}
+            onCopyText={onCopyText}
+            onOpenClientProfile={onOpenClientProfile}
+          />
 
           <TicketLocationSection ticket={ticket} onCopyText={onCopyText} />
 
@@ -377,17 +383,14 @@ const styles = StyleSheet.create((theme) => ({
     width: "100%",
     backgroundColor: theme.colors.background,
   },
-
   stateContainer: {
     flex: 1,
     minHeight: 0,
   },
-
   scroll: {
     flex: 1,
     minHeight: 0,
   },
-
   scrollContent: {
     paddingBottom: theme.spacing.lg,
   },

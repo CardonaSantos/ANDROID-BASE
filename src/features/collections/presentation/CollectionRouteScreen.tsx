@@ -67,6 +67,7 @@ export interface CollectionRouteScreenProps {
   routeId: number;
   onBack: () => void;
   onCopyText: (value: string) => void | Promise<void>;
+  onOpenClientProfile: (clientId: number) => void;
   onOpenReceipt: (invoiceId: number) => void;
 }
 
@@ -74,6 +75,7 @@ export function CollectionRouteScreen({
   routeId,
   onBack,
   onCopyText,
+  onOpenClientProfile,
   onOpenReceipt,
 }: CollectionRouteScreenProps) {
   const [viewMode, setViewMode] = useState<RouteViewMode>("clients");
@@ -429,6 +431,7 @@ export function CollectionRouteScreen({
                 onOpenRoute={(client) => {
                   void handleOpenClientRoute(client);
                 }}
+                onOpenProfile={onOpenClientProfile}
                 onOpenPayment={handleOpenPayment}
                 onOpenReceipt={onOpenReceipt}
               />
@@ -475,6 +478,7 @@ export function CollectionRouteScreen({
             {selectedMapClient ? (
               <CollectionMapClientCard
                 client={selectedMapClient}
+                onOpenProfile={onOpenClientProfile}
                 onOpenRoute={(client) => {
                   void handleOpenClientRoute(client);
                 }}

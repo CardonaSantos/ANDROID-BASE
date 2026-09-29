@@ -16,6 +16,7 @@ export type AppNavigationHref =
   | "/tickets"
   | "/instalaciones"
   | "/cobros"
+  | "/clientes"
   | "/mapa"
   | "/perfil";
 
@@ -24,153 +25,84 @@ export type AppNavigationMatchMode = "exact" | "prefix";
 export type AppNavigationPlacement = "sidebar" | "hidden";
 
 export interface AppNavigationRoute {
-  /*
-   * Identificador estable de aplicación.
-   */
   key: string;
-
-  /*
-   * Nombre usado por navegación y toolbar.
-   */
   label: string;
-
   href: AppNavigationHref;
-
   icon: LucideIcon;
-
   match: AppNavigationMatchMode;
-
-  /*
-   * sidebar:
-   *   aparece como opción principal.
-   *
-   * hidden:
-   *   el Shell conoce la ruta para resolver
-   *   título/estado, pero no la lista en el
-   *   menú lateral.
-   */
   placement: AppNavigationPlacement;
-
-  /*
-   * Si no existen roles explícitos,
-   * cualquier usuario autenticado puede
-   * acceder a la entrada desde el punto de
-   * vista de navegación.
-   */
   roles?: readonly string[];
 }
 
 export const appNavigationRoutes = [
   {
     key: "dashboard",
-
     label: "Dashboard",
-
     href: "/",
-
     icon: House,
-
     match: "exact",
-
     placement: "sidebar",
   },
-
   {
     key: "tracking",
-
     label: "Jornada",
-
     href: "/tracking",
-
     icon: MapPinned,
-
     match: "prefix",
-
     placement: "sidebar",
-
     roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
   },
   {
     key: "realtime-map",
-
     label: "Mapa",
-
     href: "/mapa",
-
     icon: Map,
-
     match: "prefix",
-
     placement: "sidebar",
-
     roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
   },
   {
     key: "tickets",
-
     label: "Tickets",
-
     href: "/tickets",
-
     icon: TicketCheck,
-
     match: "prefix",
-
     placement: "sidebar",
-
     roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
   },
-
   {
     key: "installations",
-
     label: "Instalaciones",
-
     href: "/instalaciones",
-
     icon: Wrench,
-
     match: "prefix",
-
     placement: "sidebar",
-
     roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
   },
-
   {
     key: "collections",
-
     label: "Cobros",
-
     href: "/cobros",
-
     icon: HandCoins,
-
     match: "prefix",
-
     placement: "sidebar",
-
     roles: ["COBRADOR", "TECNICO", "ADMIN", "SUPER_ADMIN"],
   },
-
-  /*
-   * Perfil pertenece al Shell autenticado,
-   * pero su acceso principal está en el
-   * avatar/menu del usuario.
-   *
-   * No debe duplicarse en el sidebar.
-   */
+  {
+    key: "customers",
+    label: "Cliente",
+    href: "/clientes",
+    icon: UserRound,
+    match: "prefix",
+    placement: "hidden",
+    roles: ["TECNICO", "COBRADOR", "ADMIN", "SUPER_ADMIN"],
+  },
   {
     key: "profile",
-
     label: "Perfil",
-
     href: "/perfil",
-
     icon: UserRound,
-
     match: "prefix",
-
     placement: "hidden",
   },
 ] as const satisfies readonly AppNavigationRoute[];

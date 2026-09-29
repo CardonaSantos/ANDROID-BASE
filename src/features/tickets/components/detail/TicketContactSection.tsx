@@ -1,6 +1,7 @@
 import { User } from "lucide-react-native";
 
 import {
+  AppButton,
   AppCard,
   AppGrid,
   AppIcon,
@@ -15,27 +16,15 @@ import { TicketContactActions } from "../TicketContactActions";
 
 export interface TicketContactSectionProps {
   ticket: TicketAssignedDetail;
-
   onCopyText: (value: string) => void | Promise<void>;
+  onOpenClientProfile: (clientId: number) => void;
 }
 
 export function TicketContactSection({
   ticket,
   onCopyText,
+  onOpenClientProfile,
 }: TicketContactSectionProps) {
-  /*
-   * =======================================================
-   * CLIENT
-   * =======================================================
-   *
-   * Los tickets operativos pueden existir sin un
-   * ClienteInternet asociado.
-   *
-   * No utilizamos valores artificiales como 0 o -1.
-   * null representa realmente la ausencia de relación.
-   * =======================================================
-   */
-
   const hasClient = ticket.clientId !== null;
 
   const clientLabel = hasClient
@@ -49,10 +38,6 @@ export function TicketContactSection({
   return (
     <AppCard variant="outlined" radius="lg" padding="md">
       <AppStack gap="md">
-        {/* ===============================================
-            HEADER
-           =============================================== */}
-
         <AppInline gap="sm" align="center">
           <AppIcon icon={User} size="md" tone="primary" decorative />
 
@@ -67,10 +52,6 @@ export function TicketContactSection({
           </AppStack>
         </AppInline>
 
-        {/* ===============================================
-            NOMBRE
-           =============================================== */}
-
         <AppStack gap="xs">
           <AppText variant="bodySmall" tone="secondary" weight="medium">
             Nombre
@@ -81,9 +62,18 @@ export function TicketContactSection({
           </AppText>
         </AppStack>
 
-        {/* ===============================================
-            CONTACTOS
-           =============================================== */}
+        {hasClient && ticket.clientId ? (
+          <AppButton
+            size="sm"
+            variant="soft"
+            tone="primary"
+            leadingIcon={User}
+            fullWidth
+            onPress={() => onOpenClientProfile(ticket.clientId as number)}
+          >
+            Ver perfil del cliente
+          </AppButton>
+        ) : null}
 
         {hasClient ? (
           <AppGrid gap="sm" minItemWidth={260}>

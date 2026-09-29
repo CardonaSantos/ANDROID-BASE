@@ -26,6 +26,15 @@ export default function TicketDetailRoute() {
     await Clipboard.setStringAsync(value);
   };
 
+  const handleOpenClientProfile = (clientId: number) => {
+    router.push({
+      pathname: "/clientes/[clienteId]",
+      params: {
+        clienteId: String(clientId),
+      },
+    });
+  };
+
   const handleOpenTechnicianSignature = () => {
     router.push({
       pathname: "/tickets/[ticketId]/firma-tecnico",
@@ -49,6 +58,7 @@ export default function TicketDetailRoute() {
       ticketId={ticketId}
       onBack={handleBack}
       onCopyText={handleCopyText}
+      onOpenClientProfile={handleOpenClientProfile}
       onOpenTechnicianSignature={handleOpenTechnicianSignature}
       onOpenClientSignature={handleOpenClientSignature}
     />
