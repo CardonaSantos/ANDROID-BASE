@@ -1,5 +1,19 @@
-import { useEffect, useState } from "react";
-import { Image, Modal, View } from "react-native";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  Image,
+  Modal,
+  ScrollView,
+  View,
+  type LayoutChangeEvent,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from "react-native";
+
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,12 +22,12 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react-native";
+
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet } from "react-native-unistyles";
 
 import {
   AppBadge,
-  AppCarousel,
   AppIconButton,
   AppInline,
   AppPressable,
@@ -30,13 +44,21 @@ export interface CustomerMediaGalleryProps {
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.5;
+const CAROUSEL_HEIGHT = 220;
 
-export function CustomerMediaGallery({ images }: CustomerMediaGalleryProps) {
+export function CustomerMediaGallery({
+  images,
+}: CustomerMediaGalleryProps) {
   const insets = useSafeAreaInsets();
+  const carouselRef = useRef<ScrollView | null>(null);
 
   const [index, setIndex] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [zoom, setZoom] = useState(MIN_ZOOM);
+  const [carouselWidth, setCarouselWidth] = useState(0);
+  const [failedImageIds, setFailedImageIds] = useState<Set<number>>(
+    () => new Set(),
+  );
 
   const safeIndex = Math.min(
     Math.max(index, 0),
@@ -50,6 +72,18 @@ export function CustomerMediaGallery({ images }: CustomerMediaGalleryProps) {
     setZoom(MIN_ZOOM);
   }, [safeIndex, fullscreen]);
 
+  useEffect(() => {
+    if (carouselWidth <= 0 || images.length === 0) {
+      return;
+    }
+
+    carouselRef.current?.scrollTo({
+      x: safeIndex * carouselWidth,
+      y: 0,
+      animated: false,
+    });
+  }, [carouselWidth, images.length, safeIndex]);
+
   if (images.length === 0) {
     return (
       <AppText variant="bodySmall" tone="secondary">
@@ -57,6 +91,45 @@ export function CustomerMediaGallery({ images }: CustomerMediaGalleryProps) {
       </AppText>
     );
   }
+
+  const handleCarouselLayout = (event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+
+    if (width > 0 && width !== carouselWidth) {
+      setCarouselWidth(width);
+    }
+  };
+
+  const handleCarouselScrollEnd = (
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
+    if (carouselWidth <= 0) {
+      return;
+    }
+
+    const nextIndex = Math.round(
+      event.nativeEvent.contentOffset.x / carouselWidth,
+    );
+
+    setIndex(
+      Math.min(
+        Math.max(nextIndex, 0),
+        images.length - 1,
+      ),
+    );
+  };
+
+  const markImageFailed = (imageId: number) => {
+    setFailedImageIds((current) => {
+      if (current.has(imageId)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.add(imageId);
+      return next;
+    });
+  };
 
   const openFullscreen = (imageIndex: number) => {
     setIndex(imageIndex);
@@ -82,11 +155,15 @@ export function CustomerMediaGallery({ images }: CustomerMediaGalleryProps) {
   };
 
   const zoomIn = () => {
-    setZoom((current) => Math.min(MAX_ZOOM, current + ZOOM_STEP));
+    setZoom((current) =>
+      Math.min(MAX_ZOOM, current + ZOOM_STEP),
+    );
   };
 
   const zoomOut = () => {
-    setZoom((current) => Math.max(MIN_ZOOM, current - ZOOM_STEP));
+    setZoom((current) =>
+      Math.max(MIN_ZOOM, current - ZOOM_STEP),
+    );
   };
 
   const resetZoom = () => {
@@ -96,46 +173,108 @@ export function CustomerMediaGallery({ images }: CustomerMediaGalleryProps) {
   return (
     <>
       <AppStack gap="sm">
-        <AppCarousel
-          items={images}
-          keyExtractor={(image) => String(image.id)}
-          index={safeIndex}
-          onIndexChange={setIndex}
-          height={220}
-          showIndicators
-          accessibilityLabel="Galería del cliente"
-          renderItem={(image, imageIndex) => (
-            <AppPressable
-              accessibilityRole="button"
-              accessibilityLabel={`Abrir imagen ${imageIndex + 1} de ${images.length} en pantalla completa`}
-              interaction="subtle"
-              haptic="selection"
-              touchTarget="none"
-              radius="md"
-              style={styles.imagePressable}
-              onPress={() => openFullscreen(imageIndex)}
+        <View
+          style={styles.carouselViewport}
+          onLayout={handleCarouselLayout}
+        >
+          {carouselWidth > 0 ? (
+            <ScrollView
+              ref={carouselRef}
+              horizontal
+              pagingEnabled
+              bounces={false}
+              showsHorizontalScrollIndicator={false}
+              onMomentumScrollEnd={handleCarouselScrollEnd}
+              contentContainerStyle={styles.carouselContent}
             >
-              <Image
-                source={{ uri: image.cdnUrl }}
-                resizeMode="cover"
-                accessibilityRole="image"
-                accessibilityLabel={
-                  image.titulo?.trim() || `Imagen ${imageIndex + 1} del cliente`
-                }
-                style={styles.image}
+              {images.map((image, imageIndex) => {
+                const failed = failedImageIds.has(image.id);
+
+                return (
+                  <View
+                    key={image.id}
+                    style={[
+                      styles.carouselPage,
+                      {
+                        width: carouselWidth,
+                      },
+                    ]}
+                  >
+                    <AppPressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Abrir imagen ${imageIndex + 1} de ${images.length} en pantalla completa`}
+                      interaction="subtle"
+                      haptic="selection"
+                      touchTarget="none"
+                      radius="md"
+                      style={styles.imagePressable}
+                      onPress={() => openFullscreen(imageIndex)}
+                    >
+                      {failed ? (
+                        <View style={styles.imageFallback}>
+                          <AppText
+                            variant="bodySmall"
+                            tone="secondary"
+                            align="center"
+                          >
+                            No se pudo cargar esta imagen.
+                          </AppText>
+                        </View>
+                      ) : (
+                        <Image
+                          source={{ uri: image.cdnUrl }}
+                          resizeMode="cover"
+                          accessibilityRole="image"
+                          accessibilityLabel={
+                            image.titulo?.trim() ||
+                            `Imagen ${imageIndex + 1} del cliente`
+                          }
+                          onError={() => {
+                            markImageFailed(image.id);
+                          }}
+                          style={styles.image}
+                        />
+                      )}
+                    </AppPressable>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          ) : null}
+        </View>
+
+        {hasMultipleImages ? (
+          <AppInline
+            gap="xs"
+            align="center"
+            justify="center"
+            accessibilityLabel={`${safeIndex + 1} de ${images.length}`}
+          >
+            {images.map((image, imageIndex) => (
+              <View
+                key={`customer-media-indicator-${image.id}`}
+                style={styles.indicator(imageIndex === safeIndex)}
               />
-            </AppPressable>
-          )}
-        />
+            ))}
+          </AppInline>
+        ) : null}
 
         <AppInline gap="sm" align="center" justify="space-between">
           <AppStack gap="xxs" flex>
-            <AppText variant="bodySmall" weight="semibold" numberOfLines={1}>
+            <AppText
+              variant="bodySmall"
+              weight="semibold"
+              numberOfLines={1}
+            >
               {selected?.titulo?.trim() || "Imagen del cliente"}
             </AppText>
 
             {selected?.descripcion?.trim() ? (
-              <AppText variant="caption" tone="secondary" numberOfLines={2}>
+              <AppText
+                variant="caption"
+                tone="secondary"
+                numberOfLines={2}
+              >
                 {selected.descripcion}
               </AppText>
             ) : null}
@@ -175,7 +314,11 @@ export function CustomerMediaGallery({ images }: CustomerMediaGalleryProps) {
             style={styles.fullscreenHeader}
           >
             <AppStack gap="xxs" flex>
-              <AppText variant="bodySmall" weight="semibold" numberOfLines={1}>
+              <AppText
+                variant="bodySmall"
+                weight="semibold"
+                numberOfLines={1}
+              >
                 {selected?.titulo?.trim() || "Imagen del cliente"}
               </AppText>
 
@@ -196,21 +339,36 @@ export function CustomerMediaGallery({ images }: CustomerMediaGalleryProps) {
 
           <View style={styles.fullscreenStage}>
             {selected ? (
-              <Image
-                source={{ uri: selected.cdnUrl }}
-                resizeMode="contain"
-                accessibilityRole="image"
-                accessibilityLabel={
-                  selected.titulo?.trim() ||
-                  `Imagen ${safeIndex + 1} del cliente`
-                }
-                style={[
-                  styles.fullscreenImage,
-                  {
-                    transform: [{ scale: zoom }],
-                  },
-                ]}
-              />
+              failedImageIds.has(selected.id) ? (
+                <View style={styles.imageFallback}>
+                  <AppText
+                    variant="bodySmall"
+                    tone="secondary"
+                    align="center"
+                  >
+                    No se pudo cargar esta imagen.
+                  </AppText>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: selected.cdnUrl }}
+                  resizeMode="contain"
+                  accessibilityRole="image"
+                  accessibilityLabel={
+                    selected.titulo?.trim() ||
+                    `Imagen ${safeIndex + 1} del cliente`
+                  }
+                  onError={() => {
+                    markImageFailed(selected.id);
+                  }}
+                  style={[
+                    styles.fullscreenImage,
+                    {
+                      transform: [{ scale: zoom }],
+                    },
+                  ]}
+                />
+              )
             ) : null}
           </View>
 
@@ -292,8 +450,23 @@ export function CustomerMediaGallery({ images }: CustomerMediaGalleryProps) {
 }
 
 const styles = StyleSheet.create((theme) => ({
+  carouselViewport: {
+    width: "100%",
+    height: CAROUSEL_HEIGHT,
+    overflow: "hidden",
+    borderRadius: theme.radius.md,
+    backgroundColor: theme.colors.surfaceSecondary,
+  },
+
+  carouselContent: {
+    height: CAROUSEL_HEIGHT,
+  },
+
+  carouselPage: {
+    height: CAROUSEL_HEIGHT,
+  },
+
   imagePressable: {
-    flex: 1,
     width: "100%",
     height: "100%",
     overflow: "hidden",
@@ -304,6 +477,25 @@ const styles = StyleSheet.create((theme) => ({
     width: "100%",
     height: "100%",
   },
+
+  imageFallback: {
+    flex: 1,
+    width: "100%",
+    minHeight: 120,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: theme.spacing.lg,
+    backgroundColor: theme.colors.surfaceSecondary,
+  },
+
+  indicator: (active: boolean) => ({
+    width: active ? 16 : 6,
+    height: 6,
+    borderRadius: theme.radius.full,
+    backgroundColor: active
+      ? theme.colors.primaryStrong
+      : theme.colors.borderStrong,
+  }),
 
   fullscreenRoot: {
     flex: 1,
