@@ -211,6 +211,9 @@ export type CustomerLocation = z.infer<typeof customerLocationSchema>;
 export type CustomerBillingZone = z.infer<typeof customerBillingZoneSchema>;
 export type CustomerContract = z.infer<typeof customerContractSchema>;
 export type CustomerBalance = z.infer<typeof customerBalanceSchema>;
+export type CustomerTicketFollowUp = z.infer<
+  typeof customerTicketFollowUpSchema
+>;
 export type CustomerTicket = z.infer<typeof customerTicketSchema>;
 export type CustomerInvoice = z.infer<typeof customerInvoiceSchema>;
 export type CustomerInvoicePayment = z.infer<
