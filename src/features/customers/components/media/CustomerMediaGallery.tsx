@@ -98,6 +98,7 @@ export function CustomerMediaGallery({ images }: CustomerMediaGalleryProps) {
             <AppText variant="bodySmall" weight="semibold" numberOfLines={1}>
               {selected?.titulo?.trim() || "Imagen del cliente"}
             </AppText>
+
             {selected?.descripcion?.trim() ? (
               <AppText variant="caption" tone="secondary" numberOfLines={2}>
                 {selected.descripcion}
@@ -106,7 +107,7 @@ export function CustomerMediaGallery({ images }: CustomerMediaGalleryProps) {
           </AppStack>
 
           <AppBadge size="sm" variant="soft" tone="neutral">
-            {safeIndex + 1} / {images.length}
+            {`${safeIndex + 1} / ${images.length}`}
           </AppBadge>
         </AppInline>
       </AppStack>
@@ -142,6 +143,7 @@ export function CustomerMediaGallery({ images }: CustomerMediaGalleryProps) {
               <AppText variant="bodySmall" weight="semibold" numberOfLines={1}>
                 {selected?.titulo?.trim() || "Imagen del cliente"}
               </AppText>
+
               <AppText variant="caption" tone="secondary">
                 {safeIndex + 1} de {images.length}
               </AppText>
