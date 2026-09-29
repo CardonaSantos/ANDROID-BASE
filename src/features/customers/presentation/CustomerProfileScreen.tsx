@@ -1,13 +1,6 @@
 import { useState } from "react";
 import { View } from "react-native";
-import {
-  Images,
-  MapPin,
-  Receipt,
-  RefreshCw,
-  UserRound,
-  Wrench,
-} from "lucide-react-native";
+import { RefreshCw } from "lucide-react-native";
 import { StyleSheet } from "react-native-unistyles";
 
 import {
@@ -26,7 +19,6 @@ import { CustomerLocationTab } from "../components/location/CustomerLocationTab"
 import { CustomerMediaTab } from "../components/media/CustomerMediaTab";
 import { CustomerOverviewTab } from "../components/overview/CustomerOverviewTab";
 import { CustomerSupportTab } from "../components/support/CustomerSupportTab";
-import { getCustomerFullName } from "../customers.helpers";
 import { useCustomerProfileQuery } from "../hooks/customers.hooks";
 
 type CustomerProfileTab =
@@ -37,11 +29,11 @@ type CustomerProfileTab =
   | "media";
 
 const PROFILE_TABS = [
-  { value: "general", label: "General", icon: UserRound },
-  { value: "billing", label: "Facturación", icon: Receipt },
-  { value: "support", label: "Soporte", icon: Wrench },
-  { value: "location", label: "Ubicación", icon: MapPin },
-  { value: "media", label: "Media", icon: Images },
+  { value: "general", label: "General" },
+  { value: "billing", label: "Facturación" },
+  { value: "support", label: "Soporte" },
+  { value: "location", label: "Ubicación" },
+  { value: "media", label: "Media" },
 ] as const;
 
 export interface CustomerProfileScreenProps {
@@ -141,13 +133,11 @@ export function CustomerProfileScreen({
   }
 
   const customer = customerQuery.data;
-  const fullName = getCustomerFullName(customer);
 
   return (
     <View style={styles.root}>
       <AppTopBar
         title={`Cliente #${customer.id}`}
-        subtitle={fullName || undefined}
         back
         onBack={onBack}
         safeAreaEdges={[]}
@@ -183,7 +173,7 @@ export function CustomerProfileScreen({
             options={PROFILE_TABS}
             value={activeTab}
             onValueChange={setActiveTab}
-            variant="pill"
+            variant="underline"
             scrollable
           />
 
