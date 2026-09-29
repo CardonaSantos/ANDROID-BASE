@@ -105,7 +105,7 @@ export const customerTicketSummarySchema = z.object({
 
 export const customerTicketSchema = z.object({
   id: positiveIdSchema,
-  titulo: z.string(),
+  titulo: nullableStringSchema,
   descripcion: nullableStringSchema,
   estado: z.string(),
   prioridad: z.string(),
