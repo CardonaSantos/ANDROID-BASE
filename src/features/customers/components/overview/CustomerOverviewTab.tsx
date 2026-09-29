@@ -1,4 +1,5 @@
 import {
+  Building2,
   CalendarDays,
   ClipboardCopy,
   Contact,
@@ -95,6 +96,10 @@ export function CustomerOverviewTab({
             label="Cliente desde"
             value={formatCustomerDate(customer.creadoEn)}
           />
+          <CustomerInfoField
+            label="Última actualización"
+            value={formatCustomerDate(customer.actualizadoEn)}
+          />
         </AppGrid>
 
         {customer.telefono ? (
@@ -117,6 +122,15 @@ export function CustomerOverviewTab({
             value={customer.observaciones.trim()}
           />
         ) : null}
+      </CustomerSectionCard>
+
+      <CustomerSectionCard title="Empresa" icon={Building2}>
+        <AppGrid gap="sm" minItemWidth={140}>
+          <CustomerInfoField
+            label="Empresa"
+            value={customer.empresa?.nombre}
+          />
+        </AppGrid>
       </CustomerSectionCard>
 
       <CustomerSectionCard title="Contacto de referencia" icon={Contact}>
@@ -232,6 +246,16 @@ export function CustomerOverviewTab({
                 : null
             }
           />
+          <CustomerInfoField
+            label="Recordatorio"
+            value={
+              customer.facturacionZona
+                ? customer.facturacionZona.enviarRecordatorio
+                  ? "Activo"
+                  : "Desactivado"
+                : null
+            }
+          />
         </AppGrid>
       </CustomerSectionCard>
 
@@ -252,7 +276,10 @@ export function CustomerOverviewTab({
 
       <CustomerSectionCard title="Configuración de red" icon={Network}>
         <AppGrid gap="sm" minItemWidth={140}>
-          <CustomerInfoField label="Dirección IP" value={customer.IP?.direccion} />
+          <CustomerInfoField
+            label="Dirección IP"
+            value={customer.IP?.direccion}
+          />
           <CustomerInfoField label="Máscara" value={customer.IP?.mascara} />
           <CustomerInfoField label="Gateway" value={customer.IP?.gateway} />
         </AppGrid>
@@ -280,6 +307,12 @@ export function CustomerOverviewTab({
             label="Fecha de pago"
             value={formatCustomerDate(
               customer.contratoServicioInternet?.fechaPago,
+            )}
+          />
+          <CustomerInfoField
+            label="Contrato creado"
+            value={formatCustomerDate(
+              customer.contratoServicioInternet?.creadoEn,
             )}
           />
         </AppGrid>

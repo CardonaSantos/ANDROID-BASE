@@ -1,17 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
+import { Image, View } from "react-native";
 import {
+  CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Clock3,
   LifeBuoy,
+  MessageSquareText,
   UserRound,
+  UsersRound,
 } from "lucide-react-native";
+import { StyleSheet } from "react-native-unistyles";
 
 import {
   AppBadge,
   AppButton,
   AppCard,
+  AppGrid,
   AppInline,
   AppStack,
   AppText,
@@ -20,6 +27,7 @@ import {
 import type {
   CustomerProfile,
   CustomerTicket,
+  CustomerTicketFollowUp,
 } from "../../api/customers.contracts.api";
 import {
   formatCustomerDate,
@@ -28,12 +36,141 @@ import {
   paginateCustomerItems,
   sortCustomerTicketsNewestFirst,
 } from "../../customers.helpers";
+import { CustomerInfoField } from "../shared/CustomerInfoField";
 import { CustomerSectionCard } from "../shared/CustomerSectionCard";
 
 const TICKETS_PER_PAGE = 5;
 
 export interface CustomerSupportTabProps {
   customer: CustomerProfile;
+}
+
+function formatSupportDateTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return formatCustomerDate(value);
+  }
+
+  return new Intl.DateTimeFormat("es-GT", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatDuration(minutes?: number | null) {
+  if (minutes === null || minutes === undefined) {
+    return "No registrado";
+  }
+
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (hours < 24) {
+    return remainingMinutes > 0
+      ? `${hours} h ${remainingMinutes} min`
+      : `${hours} h`;
+  }
+
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+
+  return remainingHours > 0
+    ? `${days} d ${remainingHours} h`
+    : `${days} d`;
+}
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) {
+    return "?";
+  }
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+function CustomerFollowUpCard({
+  followUp,
+}: {
+  followUp: CustomerTicketFollowUp;
+}) {
+  const [avatarFailed, setAvatarFailed] = useState(false);
+
+  const avatarUrl =
+    followUp.usuario.perfil.avatar?.trim() ||
+    followUp.usuario.perfil.portadaUrl?.trim() ||
+    null;
+
+  const bio = followUp.usuario.perfil.bio?.trim() || null;
+  const role = followUp.usuario.rol?.trim() || null;
+
+  return (
+    <AppCard variant="tonal" radius="md" padding="xs">
+      <AppStack gap="xs">
+        <AppInline gap="sm" align="flex-start">
+          {avatarUrl && !avatarFailed ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              resizeMode="cover"
+              accessibilityRole="image"
+              accessibilityLabel={`Avatar de ${followUp.usuario.nombre}`}
+              onError={() => setAvatarFailed(true)}
+              style={styles.avatar}
+            />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <AppText variant="labelSmall" weight="bold">
+                {getInitials(followUp.usuario.nombre)}
+              </AppText>
+            </View>
+          )}
+
+          <AppStack gap="xxs" flex>
+            <AppInline gap="xs" align="center" wrap>
+              <AppText variant="bodySmall" weight="semibold">
+                {followUp.usuario.nombre}
+              </AppText>
+
+              {role ? (
+                <AppBadge size="sm" variant="soft" tone="neutral">
+                  {formatCustomerStatus(role)}
+                </AppBadge>
+              ) : null}
+            </AppInline>
+
+            {bio ? (
+              <AppText
+                variant="caption"
+                tone="secondary"
+                numberOfLines={2}
+              >
+                {bio}
+              </AppText>
+            ) : null}
+
+            <AppText variant="caption" tone="secondary">
+              {formatSupportDateTime(followUp.creadoEn)}
+            </AppText>
+          </AppStack>
+        </AppInline>
+
+        <AppText variant="bodySmall">
+          {followUp.descripcion}
+        </AppText>
+      </AppStack>
+    </AppCard>
+  );
 }
 
 function CustomerTicketCard({ ticket }: { ticket: CustomerTicket }) {
@@ -111,31 +248,105 @@ function CustomerTicketCard({ ticket }: { ticket: CustomerTicket }) {
               </AppInline>
             ) : null}
 
-            {ticket.acompanantes.length > 0 ? (
-              <AppText variant="caption" tone="secondary">
-                Acompañantes: {ticket.acompanantes.map((item) => item.nombre).join(", ")}
-              </AppText>
-            ) : null}
+            <AppCard variant="tonal" radius="md" padding="xs">
+              <AppStack gap="xs">
+                <AppInline gap="xs" align="center">
+                  <UsersRound size={14} />
+                  <AppText variant="labelSmall" weight="semibold">
+                    Participantes
+                  </AppText>
+                </AppInline>
+
+                <AppGrid gap="xs" minItemWidth={130}>
+                  <CustomerInfoField
+                    label="Creado por"
+                    value={ticket.creadoPro?.nombre}
+                  />
+                  <CustomerInfoField
+                    label="Técnico"
+                    value={ticket.tecnico?.nombre}
+                  />
+                </AppGrid>
+
+                {ticket.acompanantes.length > 0 ? (
+                  <CustomerInfoField
+                    label="Acompañantes"
+                    value={ticket.acompanantes
+                      .map((item) => item.nombre)
+                      .join(", ")}
+                  />
+                ) : null}
+              </AppStack>
+            </AppCard>
+
+            <AppCard variant="tonal" radius="md" padding="xs">
+              <AppStack gap="xs">
+                <AppInline gap="xs" align="center">
+                  <CalendarDays size={14} />
+                  <AppText variant="labelSmall" weight="semibold">
+                    Fechas
+                  </AppText>
+                </AppInline>
+
+                <AppGrid gap="xs" minItemWidth={130}>
+                  <CustomerInfoField
+                    label="Apertura"
+                    value={formatCustomerDate(ticket.fechaApertura)}
+                  />
+                  <CustomerInfoField
+                    label="Inicio atención"
+                    value={formatCustomerDate(ticket.fechaInicioAtencion)}
+                  />
+                  <CustomerInfoField
+                    label="Resolución técnica"
+                    value={formatCustomerDate(ticket.fechaResolucionTecnico)}
+                  />
+                  <CustomerInfoField
+                    label="Cierre"
+                    value={formatCustomerDate(ticket.fechaCierre)}
+                  />
+                </AppGrid>
+              </AppStack>
+            </AppCard>
 
             {ticket.resumen ? (
               <AppCard variant="tonal" radius="md" padding="xs">
-                <AppStack gap="xxs">
-                  <AppText variant="labelSmall" weight="semibold">
-                    Resumen
-                  </AppText>
-                  <AppText variant="caption" tone="secondary">
-                    Resolución: {ticket.resumen.resueltoComo || "Sin especificar"}
-                  </AppText>
-                  <AppText variant="caption" tone="secondary">
-                    Tiempo técnico: {ticket.resumen.tiempoTecnicoMinutos ?? 0} min
-                  </AppText>
-                  <AppText variant="caption" tone="secondary">
-                    Reaperturas: {ticket.resumen.numeroReaperturas}
-                  </AppText>
-                  {ticket.resumen.notasInternas?.trim() ? (
-                    <AppText variant="caption" tone="secondary">
-                      {ticket.resumen.notasInternas}
+                <AppStack gap="xs">
+                  <AppInline gap="xs" align="center">
+                    <Clock3 size={14} />
+                    <AppText variant="labelSmall" weight="semibold">
+                      Resumen
                     </AppText>
+                  </AppInline>
+
+                  <AppGrid gap="xs" minItemWidth={130}>
+                    <CustomerInfoField
+                      label="Resolución"
+                      value={ticket.resumen.resueltoComo}
+                    />
+                    <CustomerInfoField
+                      label="Tiempo técnico"
+                      value={formatDuration(
+                        ticket.resumen.tiempoTecnicoMinutos,
+                      )}
+                    />
+                    <CustomerInfoField
+                      label="Tiempo total"
+                      value={formatDuration(
+                        ticket.resumen.tiempoTotalMinutos,
+                      )}
+                    />
+                    <CustomerInfoField
+                      label="Reaperturas"
+                      value={ticket.resumen.numeroReaperturas}
+                    />
+                  </AppGrid>
+
+                  {ticket.resumen.notasInternas?.trim() ? (
+                    <CustomerInfoField
+                      label="Notas internas"
+                      value={ticket.resumen.notasInternas.trim()}
+                    />
                   ) : null}
                 </AppStack>
               </AppCard>
@@ -143,26 +354,20 @@ function CustomerTicketCard({ ticket }: { ticket: CustomerTicket }) {
 
             {ticket.seguimientos.length > 0 ? (
               <AppStack gap="xs">
-                <AppText variant="labelSmall" weight="semibold">
-                  Seguimientos
-                </AppText>
+                <AppInline gap="xs" align="center">
+                  <MessageSquareText size={14} />
+                  <AppText variant="labelSmall" weight="semibold">
+                    {ticket.seguimientos.length === 1
+                      ? "1 seguimiento"
+                      : `${ticket.seguimientos.length} seguimientos`}
+                  </AppText>
+                </AppInline>
 
                 {ticket.seguimientos.map((followUp) => (
-                  <AppCard
+                  <CustomerFollowUpCard
                     key={followUp.id}
-                    variant="tonal"
-                    radius="md"
-                    padding="xs"
-                  >
-                    <AppStack gap="xxs">
-                      <AppText variant="bodySmall">
-                        {followUp.descripcion}
-                      </AppText>
-                      <AppText variant="caption" tone="secondary">
-                        {followUp.usuario.nombre} · {formatCustomerDate(followUp.creadoEn)}
-                      </AppText>
-                    </AppStack>
-                  </AppCard>
+                    followUp={followUp}
+                  />
                 ))}
               </AppStack>
             ) : null}
@@ -253,3 +458,23 @@ export function CustomerSupportTab({ customer }: CustomerSupportTabProps) {
     </CustomerSectionCard>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  avatar: {
+    width: 34,
+    height: 34,
+    flexShrink: 0,
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.surfaceSecondary,
+  },
+
+  avatarFallback: {
+    width: 34,
+    height: 34,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: theme.radius.full,
+    backgroundColor: theme.colors.primaryContainer,
+  },
+}));
