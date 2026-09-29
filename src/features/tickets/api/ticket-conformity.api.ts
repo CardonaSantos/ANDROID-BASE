@@ -5,10 +5,10 @@ import { httpClient } from "@/core/http";
 
 import {
   createTicketConformityResponseSchema,
+  currentTicketConformityResponseSchema,
   generateTicketConformityLinkResponseSchema,
   registerClientSignatureResponseSchema,
   registerTechnicianSignatureResponseSchema,
-  ticketConformityDetailSchema,
   type CreateTicketConformityResponse,
   type GenerateTicketConformityLinkResponse,
   type RegisterClientSignatureResponse,
@@ -58,7 +58,11 @@ export interface RegisterClientSignatureInput {
  * =========================================================
  */
 
-function parseResponse<T>(schema: ZodType<T>, payload: unknown, code: string): T {
+function parseResponse<T>(
+  schema: ZodType<T>,
+  payload: unknown,
+  code: string,
+): T {
   const result = schema.safeParse(payload);
 
   if (!result.success) {
@@ -100,7 +104,11 @@ function assertToken(token: string): string {
   return normalized;
 }
 
-function appendFile(formData: FormData, field: string, file: TicketSignatureUploadFile) {
+function appendFile(
+  formData: FormData,
+  field: string,
+  file: TicketSignatureUploadFile,
+) {
   if (file.webFile) {
     formData.append(field, file.webFile, file.name);
     return;
@@ -124,7 +132,7 @@ function appendFile(formData: FormData, field: string, file: TicketSignatureUplo
 export async function getCurrentTicketConformity(
   ticketId: number,
   signal?: AbortSignal,
-): Promise<TicketConformityDetail> {
+): Promise<TicketConformityDetail | null> {
   assertPositiveInteger(ticketId, "ticketId");
 
   const payload = await httpClient.request<unknown>({
@@ -135,7 +143,7 @@ export async function getCurrentTicketConformity(
   });
 
   return parseResponse(
-    ticketConformityDetailSchema,
+    currentTicketConformityResponseSchema,
     payload,
     "TICKET_CONFORMITY_CURRENT_INVALID_RESPONSE",
   );
@@ -181,7 +189,10 @@ export async function generateTicketConformityLink(
 ): Promise<GenerateTicketConformityLinkResponse> {
   assertPositiveInteger(conformityId, "conformityId");
 
-  const payload = await httpClient.request<unknown, GenerateTicketConformityLinkInput>({
+  const payload = await httpClient.request<
+    unknown,
+    GenerateTicketConformityLinkInput
+  >({
     method: "POST",
     path: `ticket-soporte-conformidad/${conformityId}/enlaces`,
     body: input,

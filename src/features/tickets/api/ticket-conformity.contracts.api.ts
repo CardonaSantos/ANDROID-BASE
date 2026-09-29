@@ -12,11 +12,7 @@ export const ticketConformityResultSchema = z.enum([
   "REQUIERE_RETRABAJO",
 ]);
 
-export const ticketConformityChannelSchema = z.enum([
-  "LINK",
-  "QR",
-  "WHATSAPP",
-]);
+export const ticketConformityChannelSchema = z.enum(["LINK", "QR", "WHATSAPP"]);
 
 export const ticketSignatureTypeSchema = z.enum(["CLIENTE", "TECNICO"]);
 
@@ -148,14 +144,25 @@ export const ticketConformityDetailSchema = z.object({
   creadoEn: z.string(),
   actualizadoEn: z.string(),
   respondidoEn: z.string().nullable(),
+
   ticket: ticketConformityTicketSchema,
+
   cliente: ticketConformityClientSchema.nullable(),
   tecnicoAsignado: ticketConformityUserSchema.nullable(),
   creadoPor: ticketConformityUserSchema.nullable(),
+
   firmas: z.array(ticketConformitySignatureSchema),
   enlaces: z.array(ticketConformityLinkSchema),
+
   resumen: ticketConformitySummarySchema,
 });
+
+/*
+ * Solo GET /tickets/:ticketId/actual
+ * puede responder null.
+ */
+export const currentTicketConformityResponseSchema =
+  ticketConformityDetailSchema.nullable();
 
 /*
  * =========================================================
@@ -227,10 +234,24 @@ export const registerClientSignatureResponseSchema = z.object({
  * =========================================================
  */
 
-export type TicketConformityResult = z.infer<typeof ticketConformityResultSchema>;
-export type TicketConformityChannel = z.infer<typeof ticketConformityChannelSchema>;
-export type TicketConformityDetail = z.infer<typeof ticketConformityDetailSchema>;
-export type CreateTicketConformityResponse = z.infer<typeof createTicketConformityResponseSchema>;
-export type GenerateTicketConformityLinkResponse = z.infer<typeof generateTicketConformityLinkResponseSchema>;
-export type RegisterTechnicianSignatureResponse = z.infer<typeof registerTechnicianSignatureResponseSchema>;
-export type RegisterClientSignatureResponse = z.infer<typeof registerClientSignatureResponseSchema>;
+export type TicketConformityResult = z.infer<
+  typeof ticketConformityResultSchema
+>;
+export type TicketConformityChannel = z.infer<
+  typeof ticketConformityChannelSchema
+>;
+export type TicketConformityDetail = z.infer<
+  typeof ticketConformityDetailSchema
+>;
+export type CreateTicketConformityResponse = z.infer<
+  typeof createTicketConformityResponseSchema
+>;
+export type GenerateTicketConformityLinkResponse = z.infer<
+  typeof generateTicketConformityLinkResponseSchema
+>;
+export type RegisterTechnicianSignatureResponse = z.infer<
+  typeof registerTechnicianSignatureResponseSchema
+>;
+export type RegisterClientSignatureResponse = z.infer<
+  typeof registerClientSignatureResponseSchema
+>;

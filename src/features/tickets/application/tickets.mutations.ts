@@ -1,15 +1,12 @@
 import { mutationOptions } from "@tanstack/react-query";
 
 import {
+  createTicketComment,
   sendAssignedTicketToReview,
   startAssignedTicket,
 } from "../api/tickets.api";
 
-/*
- * =========================================================
- * MUTATION KEYS
- * =========================================================
- */
+import type { CreateTicketCommentInput } from "../api/tickets.contracts.api";
 
 export const ticketsMutationKeys = {
   all: ["tickets", "mutations"] as const,
@@ -17,13 +14,17 @@ export const ticketsMutationKeys = {
   start: () => [...ticketsMutationKeys.all, "start"] as const,
 
   review: () => [...ticketsMutationKeys.all, "review"] as const,
+
+  comment: () => [...ticketsMutationKeys.all, "comment"] as const,
 };
 
-/*
- * =========================================================
- * TOMAR TICKET EN PROCESO
- * =========================================================
- */
+export function createTicketCommentMutationOptions() {
+  return mutationOptions({
+    mutationKey: ticketsMutationKeys.comment(),
+
+    mutationFn: (input: CreateTicketCommentInput) => createTicketComment(input),
+  });
+}
 
 export function startAssignedTicketMutationOptions() {
   return mutationOptions({
@@ -32,12 +33,6 @@ export function startAssignedTicketMutationOptions() {
     mutationFn: (ticketId: number) => startAssignedTicket(ticketId),
   });
 }
-
-/*
- * =========================================================
- * ENVIAR TICKET A REVISIÓN
- * =========================================================
- */
 
 export function sendAssignedTicketToReviewMutationOptions() {
   return mutationOptions({

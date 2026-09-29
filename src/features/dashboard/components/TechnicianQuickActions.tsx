@@ -96,7 +96,7 @@ export function TechnicianQuickActions({
       <TechnicianQuickActionCard
         icon={ClipboardList}
         title="Mis tickets"
-        description="Soporte asignado"
+        description=""
         pending={workload.ticketsPendientes}
         badgeTone={workload.ticketsUrgentes > 0 ? "danger" : "neutral"}
         actionLabel="Ver tickets asignados"
@@ -107,7 +107,7 @@ export function TechnicianQuickActions({
       <TechnicianQuickActionCard
         icon={Router}
         title="Mis instalaciones"
-        description="Trabajo de campo asignado"
+        description=""
         pending={workload.instalacionesPendientes}
         badgeTone={workload.instalacionesAtrasadas > 0 ? "warning" : "neutral"}
         actionLabel="Ver instalaciones asignadas"

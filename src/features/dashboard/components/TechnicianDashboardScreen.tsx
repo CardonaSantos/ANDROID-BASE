@@ -16,8 +16,6 @@ import { useLogoutMutation } from "@/features/auth";
 
 import { useTechnicianPanelQuery } from "../hooks";
 
-import { formatTechnicianPanelPeriod } from "../presentation";
-
 import { TechnicianActivitySummaryCard } from "./TechnicianActivitySummaryCard";
 
 import { TechnicianJourneyCard } from "./TechnicianJourneyCard";
@@ -105,12 +103,8 @@ export function TechnicianDashboardScreen() {
 
         <AppInline gap="md" align="center" justify="space-between" wrap>
           <AppStack gap="xs" flex>
-            <AppText variant="titleMedium" weight="semibold">
+            <AppText variant="titleSmall" weight="semibold">
               {panel.tecnico.nombre}
-            </AppText>
-
-            <AppText variant="bodySmall" tone="muted">
-              {formatTechnicianPanelPeriod(panel.periodo)}
             </AppText>
           </AppStack>
 

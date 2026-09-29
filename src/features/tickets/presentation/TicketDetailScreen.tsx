@@ -22,35 +22,27 @@ import {
 import { useAssignedTicketDetailQuery } from "../hooks/tickets.hooks";
 
 import {
+  useCreateTicketCommentMutation,
   useSendAssignedTicketToReviewMutation,
   useStartAssignedTicketMutation,
 } from "../hooks/tickets.mutations.hooks";
 
 import type { TicketLifecycleAction } from "../tickets.helpers";
 
+import { TicketActivitySection } from "../components/detail/TicketActivitySection";
 import { TicketContactSection } from "../components/detail/TicketContactSection";
-
 import { TicketDescriptionSection } from "../components/detail/TicketDescriptionSection";
-
 import { TicketHero } from "../components/detail/TicketHero";
-
 import { TicketLocationSection } from "../components/detail/TicketLocationSection";
-
 import { TicketMediaSection } from "../components/detail/TicketMediaSection";
-
 import { TicketSignatureSection } from "../components/detail/TicketSignatureSection";
-
 import { TicketBottomActionBar } from "../components/detail/TicketBottomActionBar";
 
 export interface TicketDetailScreenProps {
   ticketId: number;
-
   onBack: () => void;
-
   onCopyText: (value: string) => void | Promise<void>;
-
   onOpenTechnicianSignature: () => void;
-
   onOpenClientSignature: () => void;
 }
 
@@ -69,33 +61,37 @@ export function TicketDetailScreen({
     tone: "success" | "danger";
   } | null>(null);
 
-  /*
-   * =========================================================
-   * QUERY
-   * =========================================================
-   */
-
   const hasValidTicketId = Number.isInteger(ticketId) && ticketId > 0;
 
   const ticketQuery = useAssignedTicketDetailQuery(ticketId);
 
-  /*
-   * =========================================================
-   * MUTATIONS
-   * =========================================================
-   */
-
   const startMutation = useStartAssignedTicketMutation();
-
   const reviewMutation = useSendAssignedTicketToReviewMutation();
+  const commentMutation = useCreateTicketCommentMutation();
 
-  const isMutating = startMutation.isPending || reviewMutation.isPending;
+  const isLifecycleMutating =
+    startMutation.isPending || reviewMutation.isPending;
 
-  /*
-   * =========================================================
-   * LIFECYCLE
-   * =========================================================
-   */
+  const handleCommentSubmit = async (descripcion: string) => {
+    try {
+      await commentMutation.mutateAsync({
+        ticketId,
+        descripcion,
+      });
+
+      setFeedback({
+        message: "Comentario agregado",
+        tone: "success",
+      });
+    } catch (error) {
+      setFeedback({
+        message: "No se pudo agregar el comentario.",
+        tone: "danger",
+      });
+
+      throw error;
+    }
+  };
 
   const handleLifecycleConfirm = async () => {
     if (pendingAction === null) {
@@ -126,10 +122,6 @@ export function TicketDetailScreen({
         tone: "danger",
       });
 
-      /*
-       * AppConfirmDialog mantiene abierto
-       * el diálogo cuando onConfirm falla.
-       */
       throw error;
     }
   };
@@ -146,12 +138,6 @@ export function TicketDetailScreen({
 
   const confirmLabel =
     pendingAction === "review" ? "Enviar a revisión" : "Tomar en proceso";
-
-  /*
-   * =========================================================
-   * INVALID ID
-   * =========================================================
-   */
 
   if (!hasValidTicketId) {
     return (
@@ -181,12 +167,6 @@ export function TicketDetailScreen({
     );
   }
 
-  /*
-   * =========================================================
-   * INITIAL LOADING
-   * =========================================================
-   */
-
   if (ticketQuery.isPending) {
     return (
       <View style={styles.root}>
@@ -212,12 +192,6 @@ export function TicketDetailScreen({
       </View>
     );
   }
-
-  /*
-   * =========================================================
-   * ERROR
-   * =========================================================
-   */
 
   if (ticketQuery.isError) {
     return (
@@ -257,12 +231,6 @@ export function TicketDetailScreen({
 
   const ticket = ticketQuery.data;
 
-  /*
-   * =========================================================
-   * EMPTY / NOT FOUND
-   * =========================================================
-   */
-
   if (!ticket) {
     return (
       <View style={styles.root}>
@@ -291,18 +259,8 @@ export function TicketDetailScreen({
     );
   }
 
-  /*
-   * =========================================================
-   * CONTENT
-   * =========================================================
-   */
-
   return (
     <View style={styles.root}>
-      {/* ===================================================
-          LOCAL TOOLBAR
-         =================================================== */}
-
       <AppTopBar
         title={`Ticket #${ticket.id}`}
         subtitle=""
@@ -327,10 +285,6 @@ export function TicketDetailScreen({
         }
       />
 
-      {/* ===================================================
-          SCROLLABLE CONTENT
-         =================================================== */}
-
       <AppScrollScreen
         safeAreaEdges={[]}
         contentPaddingVertical="md"
@@ -349,6 +303,13 @@ export function TicketDetailScreen({
 
           <TicketMediaSection medias={ticket.medias} />
 
+          <TicketActivitySection
+            comments={ticket.comentarios}
+            history={ticket.historial}
+            isSubmitting={commentMutation.isPending}
+            onSubmit={handleCommentSubmit}
+          />
+
           <TicketSignatureSection
             onOpenTechnicianSignature={onOpenTechnicianSignature}
             onOpenClientSignature={onOpenClientSignature}
@@ -356,21 +317,13 @@ export function TicketDetailScreen({
         </AppStack>
       </AppScrollScreen>
 
-      {/* ===================================================
-          PERSISTENT LIFECYCLE ACTION
-         =================================================== */}
-
       <TicketBottomActionBar
         status={ticket.estado}
-        isLoading={isMutating}
+        isLoading={isLifecycleMutating}
         onRequestAction={(action) => {
           setPendingAction(action);
         }}
       />
-
-      {/* ===================================================
-          CONFIRMATION
-         =================================================== */}
 
       <AppConfirmDialog
         open={pendingAction !== null}
@@ -386,7 +339,7 @@ export function TicketDetailScreen({
         confirmTone="primary"
         confirmLabel={confirmLabel}
         cancelLabel="Cancelar"
-        dismissable={!isMutating}
+        dismissable={!isLifecycleMutating}
         onConfirm={handleLifecycleConfirm}
       >
         <AppCard variant="tonal" radius="md" padding="sm">
@@ -401,10 +354,6 @@ export function TicketDetailScreen({
           </AppStack>
         </AppCard>
       </AppConfirmDialog>
-
-      {/* ===================================================
-          FEEDBACK
-         =================================================== */}
 
       <AppSnackbar
         open={feedback !== null}
@@ -424,23 +373,18 @@ export function TicketDetailScreen({
 const styles = StyleSheet.create((theme) => ({
   root: {
     flex: 1,
-
     minHeight: 0,
-
     width: "100%",
-
     backgroundColor: theme.colors.background,
   },
 
   stateContainer: {
     flex: 1,
-
     minHeight: 0,
   },
 
   scroll: {
     flex: 1,
-
     minHeight: 0,
   },
 

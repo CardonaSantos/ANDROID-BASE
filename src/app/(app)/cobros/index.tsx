@@ -1,10 +1,20 @@
-import { ModulePlaceholderScreen } from "@/features/dashboard";
+import { useRouter } from "expo-router";
+
+import { AssignedRoutesScreen } from "@/features/collections";
 
 export default function CollectionsScreen() {
+  const router = useRouter();
+
   return (
-    <ModulePlaceholderScreen
-      title="Cobros"
-      description="Operaciones y rutas de cobranza."
+    <AssignedRoutesScreen
+      onOpenRoute={(routeId) => {
+        router.push({
+          pathname: "/cobros/[rutaId]",
+          params: {
+            rutaId: String(routeId),
+          },
+        });
+      }}
     />
   );
 }

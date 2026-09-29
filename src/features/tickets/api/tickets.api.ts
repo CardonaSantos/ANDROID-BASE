@@ -4,25 +4,17 @@ import { AppError } from "@/core/errors";
 import { httpClient } from "@/core/http";
 
 import {
+  createTicketCommentInputSchema,
   ticketAssignedDetailSchema,
+  ticketCommentCreateResponseSchema,
   ticketsAssignedListResponseSchema,
   ticketStatusMutationResponseSchema,
+  type CreateTicketCommentInput,
   type TicketAssignedDetail,
+  type TicketCommentCreateResponse,
   type TicketsAssignedListResponse,
   type TicketStatusMutationResponse,
 } from "./tickets.contracts.api";
-
-/*
- * =========================================================
- * RESPONSE PARSER
- * =========================================================
- *
- * Ninguna respuesta externa entra al feature sin validarse.
- *
- * Si el servidor cambia accidentalmente su contrato,
- * convertimos ese problema en un AppError estructurado
- * en vez de propagar datos inválidos hacia la UI.
- */
 
 function parseTicketsResponse<T>(
   schema: ZodType<T>,
@@ -44,17 +36,6 @@ function parseTicketsResponse<T>(
   return result.data;
 }
 
-/*
- * =========================================================
- * LISTADO DE TICKETS ASIGNADOS
- * =========================================================
- *
- * CRM:
- * useGetTicketsAsignados(tecId)
- *
- * GET dashboard/get-tickets-asignados/:tecId
- */
-
 export async function getAssignedTickets(
   technicianId: number,
   signal?: AbortSignal,
@@ -72,17 +53,6 @@ export async function getAssignedTickets(
     "ASSIGNED_TICKETS_INVALID_RESPONSE",
   );
 }
-
-/*
- * =========================================================
- * DETALLE DE TICKET
- * =========================================================
- *
- * CRM:
- * useGetTicketDetails(ticketId)
- *
- * GET dashboard/get-ticket-asignado-details/:ticketId
- */
 
 export async function getAssignedTicketDetail(
   ticketId: number,
@@ -102,18 +72,36 @@ export async function getAssignedTicketDetail(
   );
 }
 
-/*
- * =========================================================
- * TOMAR TICKET EN PROCESO
- * =========================================================
- *
- * CRM:
- * usePatchTicketEnProceso(ticketId)
- *
- * PATCH tickets-soporte/update-ticket-proceso/:ticketId
- *
- * Este endpoint no recibe body.
- */
+export async function createTicketComment(
+  input: CreateTicketCommentInput,
+  signal?: AbortSignal,
+): Promise<TicketCommentCreateResponse> {
+  const parsedInput = createTicketCommentInputSchema.safeParse(input);
+
+  if (!parsedInput.success) {
+    throw new AppError({
+      kind: "bad_request",
+      source: "application",
+      code: "TICKET_COMMENT_INVALID_INPUT",
+      message: "El comentario no es válido.",
+      details: parsedInput.error.issues,
+    });
+  }
+
+  const payload = await httpClient.request<unknown, CreateTicketCommentInput>({
+    method: "POST",
+    path: "ticket-seguimiento",
+    auth: "auto",
+    body: parsedInput.data,
+    signal,
+  });
+
+  return parseTicketsResponse(
+    ticketCommentCreateResponseSchema,
+    payload,
+    "TICKET_COMMENT_INVALID_RESPONSE",
+  );
+}
 
 export async function startAssignedTicket(
   ticketId: number,
@@ -132,19 +120,6 @@ export async function startAssignedTicket(
     "START_ASSIGNED_TICKET_INVALID_RESPONSE",
   );
 }
-
-/*
- * =========================================================
- * ENVIAR TICKET A REVISIÓN
- * =========================================================
- *
- * CRM:
- * usePatchTicketEnRevision(ticketId)
- *
- * PATCH tickets-soporte/update-ticket-revision/:ticketId
- *
- * Este endpoint tampoco recibe body.
- */
 
 export async function sendAssignedTicketToReview(
   ticketId: number,

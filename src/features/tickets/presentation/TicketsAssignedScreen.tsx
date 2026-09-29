@@ -260,10 +260,6 @@ export function TicketsAssignedScreen({
                 <AppText variant="titleMedium" weight="semibold">
                   Mis tickets
                 </AppText>
-
-                <AppText variant="bodySmall" tone="secondary">
-                  Tickets técnicos asignados a tu usuario.
-                </AppText>
               </AppStack>
 
               <AppButton

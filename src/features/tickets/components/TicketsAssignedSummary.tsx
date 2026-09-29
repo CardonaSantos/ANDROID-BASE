@@ -7,7 +7,6 @@ import {
   AppIcon,
   AppInline,
   AppStack,
-  AppStat,
   AppText,
 } from "@/design-system";
 
@@ -15,6 +14,7 @@ import type { TicketStats } from "../tickets.helpers";
 
 export interface TicketsAssignedSummaryProps {
   stats: TicketStats;
+
   isFetching?: boolean;
 }
 
@@ -23,27 +23,23 @@ export function TicketsAssignedSummary({
   isFetching = false,
 }: TicketsAssignedSummaryProps) {
   return (
-    <AppCard variant="outlined" radius="lg" padding="md">
-      <AppStack gap="md">
+    <AppCard variant="outlined" radius="lg" padding="sm">
+      <AppStack gap="sm">
+        {/* =================================================
+            RESUMEN GENERAL
+           ================================================= */}
+
         <AppInline gap="sm" align="center" justify="space-between">
           <AppInline gap="sm" align="center" flex>
-            <AppIcon icon={ClipboardList} size="md" tone="primary" decorative />
+            <AppIcon icon={ClipboardList} size="sm" tone="primary" decorative />
 
-            <AppStack gap="xs">
-              <AppText variant="bodySmall" tone="secondary" weight="medium">
-                Tickets asignados
-              </AppText>
+            <AppText variant="bodyMedium" weight="semibold">
+              Tickets asignados
+            </AppText>
 
-              <AppInline gap="xs" align="center">
-                <AppText variant="titleMedium" weight="bold">
-                  {stats.total}
-                </AppText>
-
-                <AppBadge size="sm" tone="neutral" variant="soft">
-                  Total
-                </AppBadge>
-              </AppInline>
-            </AppStack>
+            <AppBadge size="sm" tone="primary" variant="soft">
+              {stats.total}
+            </AppBadge>
           </AppInline>
 
           {isFetching ? (
@@ -53,30 +49,81 @@ export function TicketsAssignedSummary({
           ) : null}
         </AppInline>
 
-        <AppGrid gap="sm" minItemWidth={130}>
-          <AppStat
-            label="Urgentes"
-            value={stats.urgentes}
-            icon={Siren}
-            tone="danger"
-            variant="tonal"
-          />
+        {/* =================================================
+            MÉTRICAS COMPACTAS
+           ================================================= */}
 
-          <AppStat
-            label="Nuevos"
-            value={stats.nuevos}
-            icon={TicketCheck}
-            tone="success"
-            variant="tonal"
-          />
+        <AppGrid gap="xs" minItemWidth={95}>
+          {/* URGENTES */}
 
-          <AppStat
-            label="En proceso"
-            value={stats.enProceso}
-            icon={Wrench}
-            tone="warning"
-            variant="tonal"
-          />
+          <AppCard variant="tonal" tone="danger" radius="md" padding="xs">
+            <AppStack gap="xs">
+              <AppInline gap="xs" align="center">
+                <AppIcon icon={Siren} size="sm" tone="danger" decorative />
+
+                <AppText
+                  variant="labelSmall"
+                  tone="secondary"
+                  numberOfLines={1}
+                >
+                  Urgentes
+                </AppText>
+              </AppInline>
+
+              <AppText variant="titleMedium" weight="bold">
+                {stats.urgentes}
+              </AppText>
+            </AppStack>
+          </AppCard>
+
+          {/* NUEVOS */}
+
+          <AppCard variant="tonal" tone="success" radius="md" padding="xs">
+            <AppStack gap="xs">
+              <AppInline gap="xs" align="center">
+                <AppIcon
+                  icon={TicketCheck}
+                  size="sm"
+                  tone="success"
+                  decorative
+                />
+
+                <AppText
+                  variant="labelSmall"
+                  tone="secondary"
+                  numberOfLines={1}
+                >
+                  Nuevos
+                </AppText>
+              </AppInline>
+
+              <AppText variant="titleMedium" weight="bold">
+                {stats.nuevos}
+              </AppText>
+            </AppStack>
+          </AppCard>
+
+          {/* EN PROCESO */}
+
+          <AppCard variant="tonal" tone="warning" radius="md" padding="xs">
+            <AppStack gap="xs">
+              <AppInline gap="xs" align="center">
+                <AppIcon icon={Wrench} size="sm" tone="warning" decorative />
+
+                <AppText
+                  variant="labelSmall"
+                  tone="secondary"
+                  numberOfLines={1}
+                >
+                  En proceso
+                </AppText>
+              </AppInline>
+
+              <AppText variant="titleMedium" weight="bold">
+                {stats.enProceso}
+              </AppText>
+            </AppStack>
+          </AppCard>
         </AppGrid>
       </AppStack>
     </AppCard>

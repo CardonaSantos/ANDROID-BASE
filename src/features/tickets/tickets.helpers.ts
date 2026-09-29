@@ -3,16 +3,13 @@ import type { ComponentTone } from "@/design-system";
 import type {
   TicketAssignedDetail,
   TicketAssignedListItem,
+  TicketComment,
   TicketDetailAddress,
+  TicketHistoryItem,
+  TicketHistoryType,
   TicketPriority,
   TicketStatus,
 } from "./api/tickets.contracts.api";
-
-/*
- * =========================================================
- * TYPES
- * =========================================================
- */
 
 export type TicketLifecycleAction = "start" | "review";
 
@@ -29,13 +26,21 @@ export interface TicketStats {
   conUbicacion: number;
 }
 
-type SortableTicket = TicketAssignedListItem | TicketAssignedDetail;
+export type TicketActivityItem =
+  | {
+      kind: "comment";
+      id: string;
+      date: string;
+      comment: TicketComment;
+    }
+  | {
+      kind: "history";
+      id: string;
+      date: string;
+      history: TicketHistoryItem;
+    };
 
-/*
- * =========================================================
- * STATS
- * =========================================================
- */
+type SortableTicket = TicketAssignedListItem | TicketAssignedDetail;
 
 export function getTicketStats(
   tickets: readonly TicketAssignedListItem[],
@@ -72,29 +77,14 @@ export function getTicketStats(
   );
 }
 
-/*
- * =========================================================
- * SORTING
- * =========================================================
- *
- * Conserva el criterio del CRM:
- *
- * 1. Prioridad
- * 2. Estado operativo
- * 3. Ticket más reciente
- */
-
 export function getTicketPriorityScore(priority: TicketPriority): number {
   switch (priority) {
     case "URGENTE":
       return 4;
-
     case "ALTA":
       return 3;
-
     case "MEDIA":
       return 2;
-
     case "BAJA":
       return 1;
   }
@@ -146,98 +136,47 @@ export function sortTicketsForTechnician(
   return getSafeTimestamp(second.abiertoEn) - getSafeTimestamp(first.abiertoEn);
 }
 
-/*
- * =========================================================
- * STATUS
- * =========================================================
- */
-
 export function getTicketStatusMeta(status: TicketStatus): TicketVisualMeta {
   switch (status) {
     case "EN_PROCESO":
-      return {
-        label: "En proceso",
-        tone: "warning",
-      };
+      return { label: "En proceso", tone: "warning" };
 
     case "PENDIENTE_REVISION":
-      return {
-        label: "En revisión",
-        tone: "info",
-      };
+      return { label: "En revisión", tone: "info" };
 
     case "NUEVO":
     case "ABIERTA":
-      return {
-        label: "Nuevo",
-        tone: "success",
-      };
+      return { label: "Nuevo", tone: "success" };
 
     case "PENDIENTE":
     case "PENDIENTE_CLIENTE":
     case "PENDIENTE_TECNICO":
-      return {
-        label: formatEnumLabel(status),
-        tone: "primary",
-      };
+      return { label: formatEnumLabel(status), tone: "primary" };
 
     case "RESUELTA":
     case "CERRADO":
-      return {
-        label: formatEnumLabel(status),
-        tone: "neutral",
-      };
+      return { label: formatEnumLabel(status), tone: "neutral" };
 
     case "CANCELADA":
     case "ARCHIVADA":
-      return {
-        label: formatEnumLabel(status),
-        tone: "danger",
-      };
+      return { label: formatEnumLabel(status), tone: "danger" };
   }
 }
-
-/*
- * =========================================================
- * PRIORITY
- * =========================================================
- */
 
 export function getTicketPriorityMeta(
   priority: TicketPriority,
 ): TicketVisualMeta {
   switch (priority) {
     case "URGENTE":
-      return {
-        label: "Urgente",
-        tone: "danger",
-      };
-
+      return { label: "Urgente", tone: "danger" };
     case "ALTA":
-      return {
-        label: "Alta",
-        tone: "warning",
-      };
-
+      return { label: "Alta", tone: "warning" };
     case "MEDIA":
-      return {
-        label: "Media",
-        tone: "info",
-      };
-
+      return { label: "Media", tone: "info" };
     case "BAJA":
-      return {
-        label: "Baja",
-        tone: "neutral",
-      };
+      return { label: "Baja", tone: "neutral" };
   }
 }
-
-/*
- * =========================================================
- * LIFECYCLE
- * =========================================================
- */
 
 export function getTicketLifecycleAction(
   status: TicketStatus,
@@ -263,27 +202,63 @@ export function getTicketBlockedActionLabel(status: TicketStatus): string {
   switch (status) {
     case "PENDIENTE_REVISION":
       return "Pendiente de revisión";
-
     case "RESUELTA":
     case "CERRADO":
       return "Finalizado";
-
     case "CANCELADA":
       return "Cancelado";
-
     case "ARCHIVADA":
       return "Archivado";
-
     default:
       return "Sin acción disponible";
   }
 }
 
-/*
- * =========================================================
- * TEXT / DATE
- * =========================================================
- */
+const TICKET_HISTORY_LABELS: Record<TicketHistoryType, string> = {
+  CREADO: "Creó el ticket",
+  ACTUALIZADO: "Editó el ticket",
+  ESTADO_CAMBIADO: "Cambió el estado",
+  PRIORIDAD_CAMBIADA: "Cambió la prioridad",
+  ASIGNACION_CAMBIADA: "Cambió la asignación",
+  CANCELADO: "Canceló el ticket",
+  REABIERTO: "Reabrió el ticket",
+  FIJADO: "Fijó el ticket",
+  DESFIJADO: "Desfijó el ticket",
+};
+
+export function getTicketHistoryLabel(type: TicketHistoryType): string {
+  return TICKET_HISTORY_LABELS[type];
+}
+
+export function buildTicketActivityItems(
+  comments: readonly TicketComment[],
+  history: readonly TicketHistoryItem[],
+): TicketActivityItem[] {
+  const commentItems: TicketActivityItem[] = comments.map((comment) => ({
+    kind: "comment",
+    id: `comment-${comment.id}`,
+    date: comment.fechaRegistro,
+    comment,
+  }));
+
+  const historyItems: TicketActivityItem[] = history.map((item) => ({
+    kind: "history",
+    id: `history-${item.id}`,
+    date: item.creadoEn,
+    history: item,
+  }));
+
+  return [...commentItems, ...historyItems].sort((first, second) => {
+    const dateDifference =
+      getSafeTimestamp(second.date) - getSafeTimestamp(first.date);
+
+    if (dateDifference !== 0) {
+      return dateDifference;
+    }
+
+    return second.id.localeCompare(first.id);
+  });
+}
 
 export function formatEnumLabel(value: string): string {
   return value
@@ -312,12 +287,6 @@ export function formatTicketDate(isoDate?: string | null): string {
   }).format(date);
 }
 
-/*
- * =========================================================
- * ADDRESS
- * =========================================================
- */
-
 export function getTicketAddressText(
   address: string | TicketDetailAddress | null | undefined,
 ): string {
@@ -329,17 +298,16 @@ export function getTicketAddressText(
     return address.trim();
   }
 
-  return [address.direccion, address.sector, address.municipio]
+  return [
+    address.direccion,
+    address.sector,
+    address.municipio,
+    address.departamento,
+  ]
     .map((value) => value.trim())
     .filter(Boolean)
     .join(", ");
 }
-
-/*
- * =========================================================
- * INTERNAL
- * =========================================================
- */
 
 function getSafeTimestamp(value: string): number {
   const timestamp = new Date(value).getTime();

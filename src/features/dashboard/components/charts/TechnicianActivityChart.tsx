@@ -1,25 +1,15 @@
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 
 import {
-  Pressable,
-  View,
   type GestureResponderEvent,
   type LayoutChangeEvent,
 } from "react-native";
-
-import { Activity } from "lucide-react-native";
 
 import { useUnistyles } from "react-native-unistyles";
 
 import Svg, { Circle, Line, Polyline, Text as SvgText } from "react-native-svg";
 
-import {
-  AppCard,
-  AppIcon,
-  AppInline,
-  AppStack,
-  AppText,
-} from "@/design-system";
+import { AppCard, AppInline, AppText } from "@/design-system";
 import { TechnicianPanelActivityDay } from "../../api";
 
 /*
@@ -455,121 +445,5 @@ export function TechnicianActivityChart({
     );
   }
 
-  return (
-    <AppCard variant="outlined" radius="md" padding="md">
-      <AppStack gap="lg">
-        {/* ========================================= */}
-        {/* HEADER */}
-        {/* ========================================= */}
-
-        <AppInline gap="md" align="flex-start" justify="space-between" wrap>
-          <AppStack gap="xxs" flex>
-            <AppInline gap="sm" align="center">
-              <AppIcon icon={Activity} size="sm" tone="default" decorative />
-
-              <AppText variant="titleSmall" weight="semibold">
-                Actividad del mes
-              </AppText>
-            </AppInline>
-
-            <AppText variant="bodySmall" tone="muted">
-              Trabajos completados por día
-            </AppText>
-          </AppStack>
-
-          <AppInline gap="md" align="center" wrap>
-            <LegendItem label="Instalaciones" color={theme.colors.primary} />
-
-            <LegendItem label="Tickets" color={theme.colors.text} dashed />
-          </AppInline>
-        </AppInline>
-
-        {/* ========================================= */}
-        {/* CHART */}
-        {/* ========================================= */}
-
-        {activity.length > 0 ? (
-          <View
-            onLayout={handleLayout}
-            style={{
-              width: "100%",
-              minHeight: CHART_HEIGHT,
-              position: "relative",
-            }}
-          >
-            {chartContent}
-
-            {width > 0 ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Seleccionar día de actividad"
-                onPress={handleChartPress}
-                style={{
-                  position: "absolute",
-                  top: CHART_MARGIN.top,
-                  left: CHART_MARGIN.left,
-                  right: CHART_MARGIN.right,
-                  height: CHART_HEIGHT - CHART_MARGIN.top - CHART_MARGIN.bottom,
-                }}
-              />
-            ) : null}
-          </View>
-        ) : (
-          <AppText variant="bodySmall" tone="muted">
-            Sin información de actividad para este período.
-          </AppText>
-        )}
-
-        {/* ========================================= */}
-        {/* DETALLE DEL DÍA SELECCIONADO */}
-        {/* ========================================= */}
-
-        {selectedDay ? (
-          <AppCard variant="tonal" radius="md" padding="sm">
-            <AppInline gap="md" align="flex-start" justify="space-between">
-              <AppStack gap="xs" flex>
-                <AppText variant="labelSmall" tone="muted">
-                  DÍA SELECCIONADO
-                </AppText>
-
-                <AppText variant="titleSmall" weight="semibold">
-                  {selectedDay.etiqueta}
-                </AppText>
-
-                <AppText variant="bodySmall" tone="muted">
-                  {`${selectedDay.tickets} ${
-                    selectedDay.tickets === 1 ? "ticket" : "tickets"
-                  } · ${selectedDay.instalaciones} ${
-                    selectedDay.instalaciones === 1
-                      ? "instalación"
-                      : "instalaciones"
-                  }`}
-                </AppText>
-              </AppStack>
-
-              <AppText variant="titleMedium" weight="semibold">
-                {selectedDay.total}
-              </AppText>
-            </AppInline>
-          </AppCard>
-        ) : null}
-
-        {/* ========================================= */}
-        {/* EMPTY ACTIVITY */}
-        {/* ========================================= */}
-
-        {!hasActivity && activity.length > 0 ? (
-          <AppText
-            variant="bodySmall"
-            tone="muted"
-            style={{
-              textAlign: "center",
-            }}
-          >
-            Aún no hay trabajos completados durante este período.
-          </AppText>
-        ) : null}
-      </AppStack>
-    </AppCard>
-  );
+  return <AppCard variant="outlined" radius="md" padding="md"></AppCard>;
 }

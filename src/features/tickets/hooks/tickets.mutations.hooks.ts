@@ -1,34 +1,28 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
+  createTicketCommentMutationOptions,
   sendAssignedTicketToReviewMutationOptions,
   startAssignedTicketMutationOptions,
 } from "../application/tickets.mutations";
 
 import { ticketsQueryKeys } from "../application/tickets.query";
 
-/*
- * =========================================================
- * CACHE INVALIDATION
- * =========================================================
- *
- * Cualquier cambio de estado afecta:
- *
- * 1. El detalle del ticket.
- * 2. El listado de tickets asignados.
- *
- * Esto replica conceptualmente el comportamiento
- * del CRM Web.
- */
+async function invalidateTicketDetail(
+  queryClient: ReturnType<typeof useQueryClient>,
+  ticketId: number,
+) {
+  await queryClient.invalidateQueries({
+    queryKey: ticketsQueryKeys.detail(ticketId),
+  });
+}
 
-async function invalidateTicketAfterMutation(
+async function invalidateTicketAfterLifecycleMutation(
   queryClient: ReturnType<typeof useQueryClient>,
   ticketId: number,
 ) {
   await Promise.all([
-    queryClient.invalidateQueries({
-      queryKey: ticketsQueryKeys.detail(ticketId),
-    }),
+    invalidateTicketDetail(queryClient, ticketId),
 
     queryClient.invalidateQueries({
       queryKey: ticketsQueryKeys.assigned(),
@@ -36,11 +30,17 @@ async function invalidateTicketAfterMutation(
   ]);
 }
 
-/*
- * =========================================================
- * TOMAR TICKET EN PROCESO
- * =========================================================
- */
+export function useCreateTicketCommentMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...createTicketCommentMutationOptions(),
+
+    onSuccess: async (_response, variables) => {
+      await invalidateTicketDetail(queryClient, variables.ticketId);
+    },
+  });
+}
 
 export function useStartAssignedTicketMutation() {
   const queryClient = useQueryClient();
@@ -49,16 +49,10 @@ export function useStartAssignedTicketMutation() {
     ...startAssignedTicketMutationOptions(),
 
     onSuccess: async (_response, ticketId) => {
-      await invalidateTicketAfterMutation(queryClient, ticketId);
+      await invalidateTicketAfterLifecycleMutation(queryClient, ticketId);
     },
   });
 }
-
-/*
- * =========================================================
- * ENVIAR TICKET A REVISIÓN
- * =========================================================
- */
 
 export function useSendAssignedTicketToReviewMutation() {
   const queryClient = useQueryClient();
@@ -67,7 +61,7 @@ export function useSendAssignedTicketToReviewMutation() {
     ...sendAssignedTicketToReviewMutationOptions(),
 
     onSuccess: async (_response, ticketId) => {
-      await invalidateTicketAfterMutation(queryClient, ticketId);
+      await invalidateTicketAfterLifecycleMutation(queryClient, ticketId);
     },
   });
 }
