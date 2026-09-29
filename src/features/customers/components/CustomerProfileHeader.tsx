@@ -32,14 +32,21 @@ export function CustomerProfileHeader({ customer }: CustomerProfileHeaderProps) 
     .filter(Boolean)
     .join(" · ");
 
+  const addressLabel = customer.direccion?.trim() || locationLabel;
+  const pendingBalance = Math.max(
+    0,
+    customer.saldoCliente?.saldoPendiente ?? 0,
+  );
+  const hasPendingBalance = pendingBalance > 0;
+
   return (
-    <AppCard variant="tonal" tone="primary" radius="lg" padding="sm">
+    <AppCard variant="outlined" tone="neutral" radius="lg" padding="sm">
       <AppStack gap="sm">
         <AppInline gap="sm" align="center">
           <AppIcon icon={UserRound} size="md" tone="primary" decorative />
 
           <AppStack gap="xxs" flex>
-            <AppText variant="titleSmall" weight="bold" numberOfLines={2}>
+            <AppText variant="titleSmall" weight="semibold" numberOfLines={2}>
               {fullName}
             </AppText>
 
@@ -69,9 +76,11 @@ export function CustomerProfileHeader({ customer }: CustomerProfileHeaderProps) 
           <AppBadge
             size="sm"
             variant="outlined"
-            tone={customer.saldoCliente?.saldoPendiente ? "danger" : "success"}
+            tone={hasPendingBalance ? "danger" : "success"}
           >
-            Pendiente {formatCustomerMoney(customer.saldoCliente?.saldoPendiente)}
+            {hasPendingBalance
+              ? `Pendiente ${formatCustomerMoney(pendingBalance)}`
+              : "Sin saldo pendiente"}
           </AppBadge>
         </AppInline>
 
@@ -84,11 +93,16 @@ export function CustomerProfileHeader({ customer }: CustomerProfileHeaderProps) 
           </AppInline>
         ) : null}
 
-        {locationLabel || customer.direccion ? (
+        {addressLabel ? (
           <AppInline gap="xs" align="flex-start">
             <AppIcon icon={MapPin} size="sm" tone="muted" decorative />
-            <AppText variant="bodySmall" tone="secondary" style={{ flex: 1 }}>
-              {customer.direccion || locationLabel}
+            <AppText
+              variant="bodySmall"
+              tone="secondary"
+              numberOfLines={2}
+              style={{ flex: 1 }}
+            >
+              {addressLabel}
             </AppText>
           </AppInline>
         ) : null}
