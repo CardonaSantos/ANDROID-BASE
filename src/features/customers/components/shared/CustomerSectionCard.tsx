@@ -29,7 +29,7 @@ export function CustomerSectionCard({
           <AppIcon icon={icon} size="sm" tone="primary" decorative />
 
           <AppStack gap="xxs" flex>
-            <AppText variant="titleSmall" weight="semibold">
+            <AppText variant="bodyMedium" weight="semibold">
               {title}
             </AppText>
 
