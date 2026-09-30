@@ -189,7 +189,7 @@ export function CollectionClientCard({
             fullWidth
             onPress={() => onOpenProfile(client.id)}
           >
-            Ver perfil del cliente
+            Ver perfil
           </AppButton>
 
           <AppStack gap="xs">
@@ -269,5 +269,6 @@ const styles = StyleSheet.create((theme) => ({
   content: {
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.lg,
+    marginTop: 4,
   },
 }));

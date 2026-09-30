@@ -108,16 +108,6 @@ export function RealtimeConnectionCard() {
           </AppText>
         </AppStack>
 
-        <AppStack gap="xs">
-          <AppText variant="labelMedium" tone="muted">
-            Socket.IO
-          </AppText>
-
-          <AppText tone={connected ? "success" : "muted"}>
-            {getStatusLabel(status)}
-          </AppText>
-        </AppStack>
-
         {status === "reconnecting" ? (
           <AppStack gap="xs">
             <AppText variant="labelMedium" tone="muted">
@@ -135,9 +125,7 @@ export function RealtimeConnectionCard() {
         ) : null}
 
         {connected ? (
-          <AppAlert tone="success" title="Socket conectado">
-            La aplicación está conectada al canal realtime del CRM.
-          </AppAlert>
+          <AppAlert tone="success" title="En línea"></AppAlert>
         ) : null}
       </AppStack>
     </AppCard>

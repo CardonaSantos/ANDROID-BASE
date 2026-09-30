@@ -176,7 +176,10 @@ export function TicketTechnicianSignatureScreen({
     );
   }
 
-  if (prepareMutation.isPending || (!prepareMutation.data && !prepareMutation.isError)) {
+  if (
+    prepareMutation.isPending ||
+    (!prepareMutation.data && !prepareMutation.isError)
+  ) {
     return (
       <View style={styles.root}>
         <AppTopBar
@@ -294,10 +297,6 @@ export function TicketTechnicianSignatureScreen({
                 <AppText variant="titleMedium" weight="semibold">
                   Firma del técnico
                 </AppText>
-
-                <AppText variant="bodySmall" tone="secondary">
-                  La identidad del firmante se obtiene del usuario autenticado.
-                </AppText>
               </AppStack>
 
               <TicketSignaturePad
@@ -322,12 +321,18 @@ export function TicketTechnicianSignatureScreen({
                 leadingIcon={Save}
                 fullWidth
                 loading={saveAction.pending || registerMutation.isPending}
-                disabled={signatureEmpty || saveAction.pending || registerMutation.isPending}
+                disabled={
+                  signatureEmpty ||
+                  saveAction.pending ||
+                  registerMutation.isPending
+                }
                 loadingAccessibilityLabel="Guardando firma técnica"
                 accessibilityLabel="Guardar firma técnica"
                 onPress={() => {
                   if (signatureEmpty) {
-                    setSignatureError("Debe registrar su firma antes de continuar.");
+                    setSignatureError(
+                      "Debe registrar su firma antes de continuar.",
+                    );
                     return;
                   }
 

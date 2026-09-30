@@ -304,42 +304,6 @@ export function RealTimeLocationScreen() {
 
         {/* STATUS */}
 
-        <AppCard>
-          <AppStack gap="lg">
-            <AppStack gap="xs">
-              <AppText variant="labelMedium" tone="muted">
-                Técnicos con jornada activa
-              </AppText>
-
-              <AppText variant="headlineSmall" weight="semibold">
-                {realtimeTechnicians.length}
-              </AppText>
-            </AppStack>
-
-            <AppStack gap="xs">
-              <AppText variant="labelMedium" tone="muted">
-                Con ubicación disponible
-              </AppText>
-
-              <AppText variant="headlineSmall" weight="semibold">
-                {mappableTechnicians.length}
-              </AppText>
-            </AppStack>
-
-            <AppButton
-              variant="outlined"
-              leadingIcon={RefreshCw}
-              loading={trackingQuery.isFetching}
-              loadingAccessibilityLabel="Actualizando ubicaciones"
-              onPress={() => {
-                void trackingQuery.refetch();
-              }}
-            >
-              Actualizar
-            </AppButton>
-          </AppStack>
-        </AppCard>
-
         {/* ACTIVE BUT WITHOUT GPS */}
 
         {realtimeTechnicians.length > 0 && mappableTechnicians.length === 0 ? (

@@ -22,7 +22,7 @@ export function CustomerLocationMap({
         </AppText>
 
         <AppText variant="caption" tone="secondary">
-          El mapa interactivo está disponible en Android.
+          Maps está disponible.
         </AppText>
       </AppStack>
     </AppAlert>

@@ -79,16 +79,12 @@ export function TrackingProfileCard({
           gap="lg"
           accessibilityLabel="Perfil de seguimiento GPS"
         >
-          <AppRadio
-            value="NORMAL"
-            label="Normal"
-            description="Ubicación hasta cada 5 minutos o al desplazarse aproximadamente 250 metros."
-          />
+          <AppRadio value="NORMAL" label="Normal" description="" />
 
           <AppRadio
             value="BATTERY_SAVER"
             label="Ahorro de batería"
-            description="Ubicación hasta cada 10 minutos o al desplazarse aproximadamente 250 metros."
+            description=""
           />
         </AppRadioGroup>
 

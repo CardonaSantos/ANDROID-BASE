@@ -9,7 +9,6 @@ import { StyleSheet } from "react-native-unistyles";
 import { isAppError } from "@/core/errors";
 
 import {
-  AppAlert,
   AppButton,
   AppCard,
   AppErrorState,
@@ -56,7 +55,9 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return isAppError(error) ? error.message : fallback;
 }
 
-function getFieldErrors(error: ReturnType<typeof ticketClientSignatureIdentitySchema.safeParse>): ClientFieldErrors {
+function getFieldErrors(
+  error: ReturnType<typeof ticketClientSignatureIdentitySchema.safeParse>,
+): ClientFieldErrors {
   if (error.success) {
     return {};
   }
@@ -153,7 +154,10 @@ export function TicketClientSignatureScreen({
     signingLink,
   ]);
 
-  const submitAction = useActionHandler<[TicketClientSignatureIdentity], unknown>({
+  const submitAction = useActionHandler<
+    [TicketClientSignatureIdentity],
+    unknown
+  >({
     disabled:
       !conformity ||
       !signingLink ||
@@ -321,7 +325,10 @@ export function TicketClientSignatureScreen({
     );
   }
 
-  if (prepareMutation.isPending || (!prepareMutation.data && !prepareMutation.isError)) {
+  if (
+    prepareMutation.isPending ||
+    (!prepareMutation.data && !prepareMutation.isError)
+  ) {
     return (
       <View style={styles.root}>
         <AppTopBar
@@ -472,30 +479,25 @@ export function TicketClientSignatureScreen({
         <AppStack gap="md">
           <TicketSignatureSummaryCard conformity={conformity} signer="client" />
 
-          <AppAlert tone="info" title="Firma presencial">
-            La autorización temporal se gestiona internamente. No se abrirá un
-            navegador ni se mostrará un enlace al cliente.
-          </AppAlert>
-
           <AppCard variant="outlined" radius="lg" padding="md">
             <AppStack gap="md">
               <AppStack gap="xs">
-                <AppText variant="titleMedium" weight="semibold">
+                <AppText variant="titleSmall" weight="semibold">
                   Datos del firmante
-                </AppText>
-
-                <AppText variant="bodySmall" tone="secondary">
-                  Confirma los datos antes de registrar la conformidad.
                 </AppText>
               </AppStack>
 
               <AppInput
                 label="Nombre completo"
                 required
+                size="sm"
                 value={nombreFirmante}
                 onChangeText={(value) => {
                   setNombreFirmante(value);
-                  setFieldErrors((current) => ({ ...current, nombreFirmante: undefined }));
+                  setFieldErrors((current) => ({
+                    ...current,
+                    nombreFirmante: undefined,
+                  }));
                 }}
                 error={fieldErrors.nombreFirmante}
                 autoCapitalize="words"
@@ -506,10 +508,14 @@ export function TicketClientSignatureScreen({
               <AppInput
                 label="Teléfono"
                 required
+                size="sm"
                 value={telefonoFirmante}
                 onChangeText={(value) => {
                   setTelefonoFirmante(value);
-                  setFieldErrors((current) => ({ ...current, telefonoFirmante: undefined }));
+                  setFieldErrors((current) => ({
+                    ...current,
+                    telefonoFirmante: undefined,
+                  }));
                 }}
                 error={fieldErrors.telefonoFirmante}
                 keyboardType="phone-pad"
@@ -525,10 +531,6 @@ export function TicketClientSignatureScreen({
                 <AppText variant="titleMedium" weight="semibold">
                   Firma del cliente
                 </AppText>
-
-                <AppText variant="bodySmall" tone="secondary">
-                  La firma se almacena como imagen PNG asociada al ticket.
-                </AppText>
               </AppStack>
 
               <TicketSignaturePad
@@ -540,7 +542,10 @@ export function TicketClientSignatureScreen({
                   setSignatureEmpty(isEmpty);
 
                   if (!isEmpty) {
-                    setFieldErrors((current) => ({ ...current, firma: undefined }));
+                    setFieldErrors((current) => ({
+                      ...current,
+                      firma: undefined,
+                    }));
                     submitAction.resetError();
                   }
                 }}

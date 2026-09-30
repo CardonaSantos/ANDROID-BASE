@@ -18,12 +18,7 @@ import { Eraser } from "lucide-react-native";
 
 import { StyleSheet } from "react-native-unistyles";
 
-import {
-  AppButton,
-  AppInline,
-  AppStack,
-  AppText,
-} from "@/design-system";
+import { AppButton, AppInline, AppStack, AppText } from "@/design-system";
 
 import type {
   TicketSignaturePadHandle,
@@ -79,13 +74,7 @@ export const TicketSignaturePad = forwardRef<
   TicketSignaturePadHandle,
   TicketSignaturePadProps
 >(function TicketSignaturePad(
-  {
-    disabled = false,
-    invalid = false,
-    error,
-    description = "Firme dentro del recuadro utilizando el dedo o un lápiz táctil.",
-    onEmptyChange,
-  },
+  { disabled = false, invalid = false, error, description = "", onEmptyChange },
   ref,
 ) {
   const captureViewRef = useRef<View>(null);
@@ -111,11 +100,14 @@ export const TicketSignaturePad = forwardRef<
     onEmptyChangeRef.current?.(isEmpty);
   }, []);
 
-  const setCurrent = useCallback((next: SignatureStroke) => {
-    currentStrokeRef.current = next;
-    setCurrentStroke(next);
-    syncEmptyState(next.length === 0 && strokesRef.current.length === 0);
-  }, [syncEmptyState]);
+  const setCurrent = useCallback(
+    (next: SignatureStroke) => {
+      currentStrokeRef.current = next;
+      setCurrentStroke(next);
+      syncEmptyState(next.length === 0 && strokesRef.current.length === 0);
+    },
+    [syncEmptyState],
+  );
 
   const commitCurrentStroke = useCallback(() => {
     const current = currentStrokeRef.current;
@@ -146,7 +138,9 @@ export const TicketSignaturePad = forwardRef<
   }, [syncEmptyState]);
 
   const isEmpty = useCallback(() => {
-    return strokesRef.current.length === 0 && currentStrokeRef.current.length === 0;
+    return (
+      strokesRef.current.length === 0 && currentStrokeRef.current.length === 0
+    );
   }, []);
 
   const captureFile = useCallback(
@@ -225,7 +219,11 @@ export const TicketSignaturePad = forwardRef<
   return (
     <AppStack gap="sm">
       <AppInline gap="sm" align="center" justify="space-between">
-        <AppText variant="bodySmall" tone="secondary" style={styles.description}>
+        <AppText
+          variant="bodySmall"
+          tone="secondary"
+          style={styles.description}
+        >
           {description}
         </AppText>
 
@@ -243,58 +241,59 @@ export const TicketSignaturePad = forwardRef<
       </AppInline>
 
       <View
-          ref={captureViewRef}
-          collapsable={false}
-          accessible
-          accessibilityRole="image"
-          accessibilityLabel={
-            isCurrentlyEmpty
-              ? "Área de firma vacía"
-              : "Firma manuscrita capturada"
-          }
-          {...panResponder.panHandlers}
-          style={[
-            styles.paper,
-            invalid ? styles.paperInvalid : null,
-            disabled ? styles.paperDisabled : null,
-          ]}
-        >
-          <Svg width="100%" height="100%">
-            {strokes.map((stroke, index) => (
-              <Path
-                key={`stroke-${index}`}
-                d={strokeToPath(stroke)}
-                fill="none"
-                stroke={SIGNATURE_INK}
-                strokeWidth={2.2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
+        ref={captureViewRef}
+        collapsable={false}
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={
+          isCurrentlyEmpty
+            ? "Área de firma vacía"
+            : "Firma manuscrita capturada"
+        }
+        {...panResponder.panHandlers}
+        style={[
+          styles.paper,
+          invalid ? styles.paperInvalid : null,
+          disabled ? styles.paperDisabled : null,
+        ]}
+      >
+        <Svg width="100%" height="100%">
+          {strokes.map((stroke, index) => (
+            <Path
+              key={`stroke-${index}`}
+              d={strokeToPath(stroke)}
+              fill="none"
+              stroke={SIGNATURE_INK}
+              strokeWidth={2.2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
 
-            {currentStroke.length > 0 ? (
-              <Path
-                d={strokeToPath(currentStroke)}
-                fill="none"
-                stroke={SIGNATURE_INK}
-                strokeWidth={2.2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ) : null}
-          </Svg>
-
-          {isCurrentlyEmpty ? (
-            <View pointerEvents="none" style={styles.placeholder}>
-              <AppText variant="titleMedium" weight="semibold" tone="muted" align="center">
-                Firme aquí
-              </AppText>
-
-              <AppText variant="bodySmall" tone="muted" align="center">
-                Use el dedo o un lápiz táctil
-              </AppText>
-            </View>
+          {currentStroke.length > 0 ? (
+            <Path
+              d={strokeToPath(currentStroke)}
+              fill="none"
+              stroke={SIGNATURE_INK}
+              strokeWidth={2.2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           ) : null}
+        </Svg>
+
+        {isCurrentlyEmpty ? (
+          <View pointerEvents="none" style={styles.placeholder}>
+            <AppText
+              variant="titleMedium"
+              weight="semibold"
+              tone="muted"
+              align="center"
+            >
+              Firme aquí
+            </AppText>
+          </View>
+        ) : null}
       </View>
 
       {invalid && error ? (

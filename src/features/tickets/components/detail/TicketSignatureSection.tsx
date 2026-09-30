@@ -21,16 +21,12 @@ export function TicketSignatureSection({
   return (
     <AppCard variant="outlined" radius="lg" padding="sm">
       <AppStack gap="xs">
-        <AppSectionHeader
-          title="Firmas y conformidad"
-          description="Registra las firmas asociadas al cierre del trabajo."
-          size="sm"
-        />
+        <AppSectionHeader title="Firmas" description="" size="sm" />
 
         <AppListItem
           size="md"
           title="Firma del técnico"
-          description="Registra la firma del técnico asignado."
+          description=""
           leading={<AppIcon icon={PenLine} tone="primary" decorative />}
           disclosure
           accessibilityLabel="Registrar firma del técnico"
@@ -43,7 +39,7 @@ export function TicketSignatureSection({
         <AppListItem
           size="md"
           title="Firma del cliente"
-          description="Registra la conformidad y firma del cliente."
+          description=""
           leading={<AppIcon icon={PenLine} tone="info" decorative />}
           disclosure
           accessibilityLabel="Registrar firma del cliente"

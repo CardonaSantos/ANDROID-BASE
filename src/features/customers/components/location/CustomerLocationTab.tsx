@@ -108,10 +108,6 @@ export function CustomerLocationTab({ customer }: CustomerLocationTabProps) {
               location={location}
               title={getCustomerFullName(customer) || `Cliente #${customer.id}`}
             />
-
-            <AppText variant="caption" tone="secondary">
-              {location.latitud}, {location.longitud}
-            </AppText>
           </CustomerSectionCard>
         ) : (
           <CustomerSectionCard title="Mapa" icon={Navigation}>
