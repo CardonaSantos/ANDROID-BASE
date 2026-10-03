@@ -3,7 +3,7 @@
     "name": "Nova",
     "slug": "nova-tecnico-app",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/NOVA LOGO-PNG.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
