@@ -281,21 +281,12 @@ async function configureAndroidChannels(
     TICKETS_NOTIFICATION_CHANNEL_ID,
     {
       name: TICKETS_NOTIFICATION_CHANNEL_NAME,
-
       description: TICKETS_NOTIFICATION_CHANNEL_DESCRIPTION,
-
       importance: Notifications.AndroidImportance.HIGH,
-
-      sound: "default",
-
       vibrationPattern: [...TICKETS_NOTIFICATION_VIBRATION_PATTERN],
-
       enableVibrate: true,
-
       showBadge: true,
-
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
-
       bypassDnd: false,
     },
   );
